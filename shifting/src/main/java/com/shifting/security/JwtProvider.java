@@ -23,12 +23,6 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Generate a JWT token for the given email address.
-     *
-     * @param email the authenticated user's email (used as subject)
-     * @return signed compact JWT string
-     */
     public String generateToken(String email) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtExpirationMs);
@@ -41,22 +35,10 @@ public class JwtProvider {
                 .compact();
     }
 
-    /**
-     * Extract the email (subject) from a JWT token.
-     *
-     * @param token compact JWT string (may include "Bearer " prefix)
-     * @return the email embedded in the token
-     */
     public String getEmailFromToken(String token) {
         return parseClaims(token).getSubject();
     }
 
-    /**
-     * Validate a JWT token: checks signature and expiry.
-     *
-     * @param token compact JWT string
-     * @return true if valid
-     */
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
@@ -66,10 +48,6 @@ public class JwtProvider {
             return false;
         }
     }
-
-    // -------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------
 
     private Claims parseClaims(String token) {
         // Strip "Bearer " prefix if present

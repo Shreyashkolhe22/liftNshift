@@ -32,9 +32,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // All other endpoints require a valid JWT
-                        .anyRequest().authenticated())
-                // Plug in the JWT filter before Spring's built-in username/password filter
+
+                        // Swagger endpoints (ADD THIS)
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        // Everything else needs JWT
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
