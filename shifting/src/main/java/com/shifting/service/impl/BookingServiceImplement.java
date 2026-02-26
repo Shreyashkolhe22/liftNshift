@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 @Service
@@ -26,19 +27,8 @@ public class BookingServiceImplement implements BookingService {
     @Override
     public BookingDto createBooking(CreateBookingRequest request) {
 
-        // 1. Get logged-in user
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        User user = getCurrentUser();
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email);
-
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
-
-        // 2. Create booking
         Booking booking = new Booking();
         booking.setPickupAddress(request.getPickupAddress());
         booking.setDropAddress(request.getDropAddress());
@@ -48,30 +38,65 @@ public class BookingServiceImplement implements BookingService {
 
         Booking saved = bookingRepository.save(booking);
 
-        // 3. Convert to DTO
         return mapToDto(saved);
-    }
-
-    private BookingDto mapToDto(Booking booking) {
-
-        BookingDto dto = new BookingDto();
-        dto.setId(booking.getId());
-        dto.setStatus(booking.getStatus());
-        dto.setTotalAmount(booking.getTotalAmount());
-        dto.setCreatedAt(booking.getCreatedAt());
-
-        return dto;
     }
 
     @Override
     public BookingDto getBookingById(Long id) {
-        Booking booking = bookingRepository.findById(id)
+
+        User currentUser = getCurrentUser();
+
+        Booking booking = bookingRepository
+                .findByIdAndUserId(id, currentUser.getId())
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
+
         return mapToDto(booking);
     }
 
     @Override
     public void deleteBooking(Long id) {
-        bookingRepository.deleteById(id);
+
+        User currentUser = getCurrentUser();
+
+        Booking booking = bookingRepository
+                .findByIdAndUserId(id, currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        bookingRepository.delete(booking);
+    }
+
+    @Override
+    public List<BookingDto> getMyBookings() {
+
+        User user = getCurrentUser();
+
+        List<Booking> bookings =
+                bookingRepository.findByUserId(user.getId());
+
+        return bookings.stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    private BookingDto mapToDto(Booking booking) {
+
+        return BookingDto.builder()
+                .id(booking.getId())
+                .pickupAddress(booking.getPickupAddress())
+                .dropAddress(booking.getDropAddress())
+                .status(booking.getStatus())
+                .totalAmount(booking.getTotalAmount())
+                .createdAt(booking.getCreatedAt())
+                .build();
+    }
+
+    private User getCurrentUser() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email);
     }
 }
