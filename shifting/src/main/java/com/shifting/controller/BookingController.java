@@ -1,7 +1,9 @@
 package com.shifting.controller;
 
 import com.shifting.payload.dto.BookingDto;
+import com.shifting.payload.request.AddBookingItemRequest;
 import com.shifting.payload.request.CreateBookingRequest;
+import com.shifting.service.BookingItemService;
 import com.shifting.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,8 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingItemService bookingItemService;
+
 
     @PostMapping
     public ResponseEntity<BookingDto> createBooking(
@@ -39,10 +43,23 @@ public class BookingController {
         return ResponseEntity.ok("Deleted booking successfully");
     }
 
-    @GetMapping("/my-bookings")
+    @GetMapping
     public ResponseEntity<List<BookingDto>> getAllBooking()
     {
         List<BookingDto> response = bookingService.getMyBookings();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Add item (predefined or custom) to booking
+     */
+    @PostMapping("/items")
+    public ResponseEntity<BookingDto> addItemToBooking(
+            @RequestBody AddBookingItemRequest request) {
+
+        BookingDto response =
+                bookingItemService.addItemToBooking(request);
+
         return ResponseEntity.ok(response);
     }
 }
