@@ -50,16 +50,4 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Add item (predefined or custom) to booking
-     */
-    @PostMapping("/items")
-    public ResponseEntity<BookingDto> addItemToBooking(
-            @RequestBody AddBookingItemRequest request) {
-
-        BookingDto response =
-                bookingItemService.addItemToBooking(request);
-
-        return ResponseEntity.ok(response);
-    }
 }
