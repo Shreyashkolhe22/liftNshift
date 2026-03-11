@@ -3,8 +3,11 @@ package com.shifting.controller;
 import com.shifting.payload.dto.BookingDto;
 import com.shifting.payload.request.AddBookingItemRequest;
 import com.shifting.payload.request.CreateBookingRequest;
+import com.shifting.payload.request.UpdateBookingStatusRequest;
 import com.shifting.service.BookingItemService;
 import com.shifting.service.BookingService;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +51,17 @@ public class BookingController {
     {
         List<BookingDto> response = bookingService.getMyBookings();
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{bookingId}/status")
+    @Operation(summary = "Update booking status",
+            description = "Allowed transitions: PENDING → CONFIRMED → IN_PROGRESS → COMPLETED. Can also cancel anytime.")
+    public ResponseEntity<BookingDto> updateBookingStatus(
+            @PathVariable Long bookingId,
+            @Valid @RequestBody UpdateBookingStatusRequest request) {
+
+        BookingDto updated = bookingService.updateBookingStatus(bookingId, request);
+        return ResponseEntity.ok(updated);
     }
 
 }

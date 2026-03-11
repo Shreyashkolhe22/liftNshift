@@ -38,6 +38,7 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
+                                "/api/predefined-items/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 

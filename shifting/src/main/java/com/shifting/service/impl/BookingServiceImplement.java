@@ -5,6 +5,7 @@ import com.shifting.model.BookingStatus;
 import com.shifting.model.User;
 import com.shifting.payload.dto.BookingDto;
 import com.shifting.payload.request.CreateBookingRequest;
+import com.shifting.payload.request.UpdateBookingStatusRequest;
 import com.shifting.repository.BookingRepository;
 import com.shifting.repository.UserRepository;
 import com.shifting.service.BookingService;
@@ -78,6 +79,38 @@ public class BookingServiceImplement implements BookingService {
         return bookings.stream()
                 .map(this::mapToDto)
                 .toList();
+    }
+
+    @Override
+    public BookingDto updateBookingStatus(Long bookingId, UpdateBookingStatusRequest request) {
+
+        // 1. Get the logged-in user
+        User currentUser = getCurrentUser();
+
+        // 2. Find the booking — must belong to this user
+        Booking booking = bookingRepository.findByIdAndUserId(bookingId, currentUser.getId())
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Booking not found with id: " + bookingId
+                ));
+
+        // 3. Guard: don't allow going backwards in status
+        //    e.g. COMPLETED → PENDING is not allowed
+        BookingStatus current = booking.getStatus();
+        BookingStatus next = request.getStatus();
+
+        if (current == BookingStatus.COMPLETED || current == BookingStatus.CANCELLED) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Cannot change status of a " + current + " booking"
+            );
+        }
+
+        // 4. Apply and save
+        booking.setStatus(next);
+        bookingRepository.save(booking);
+
+        return mapToDto(booking);
     }
 
     private BookingDto mapToDto(Booking booking) {
