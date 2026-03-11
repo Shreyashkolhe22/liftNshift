@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import com.shifting.exception.ApiException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -48,7 +50,7 @@ public class BookingServiceImplement implements BookingService {
 
         Booking booking = bookingRepository
                 .findByIdAndUserId(id, currentUser.getId())
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
 
         return mapToDto(booking);
     }
@@ -60,7 +62,7 @@ public class BookingServiceImplement implements BookingService {
 
         Booking booking = bookingRepository
                 .findByIdAndUserId(id, currentUser.getId())
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
 
         bookingRepository.delete(booking);
     }

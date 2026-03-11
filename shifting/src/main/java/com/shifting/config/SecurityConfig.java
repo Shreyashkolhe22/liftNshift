@@ -35,9 +35,10 @@ public class SecurityConfig {
 
                         // Swagger endpoints (ADD THIS)
                         .requestMatchers(
+                                "/auth/**",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
                         ).permitAll()
 
                         // Everything else needs JWT
