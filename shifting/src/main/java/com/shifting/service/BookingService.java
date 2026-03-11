@@ -2,6 +2,7 @@ package com.shifting.service;
 
 import com.shifting.payload.dto.BookingDto;
 import com.shifting.payload.request.CreateBookingRequest;
+import com.shifting.payload.request.UpdateBookingStatusRequest;
 
 import java.util.List;
 
@@ -14,4 +15,5 @@ public interface BookingService {
     void deleteBooking(Long id);
 
     List<BookingDto> getMyBookings();
+    BookingDto updateBookingStatus(Long bookingId, UpdateBookingStatusRequest request);
 }
