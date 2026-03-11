@@ -1,0 +1,1 @@
+{"timestamp":"2026-03-10T01:47:08.8983902","status":500,"error":"Internal Server Error","message":"Handler dispatch failed: java.lang.NoSuchMethodError: 'void org.springframework.web.method.ControllerAdviceBean.<init>(java.lang.Object)'","path":"uri=/v3/api-docs","errors":null}

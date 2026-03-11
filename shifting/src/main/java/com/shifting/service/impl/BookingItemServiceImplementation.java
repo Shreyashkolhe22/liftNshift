@@ -14,6 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.shifting.exception.ApiException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,20 +35,20 @@ public class BookingItemServiceImplementation implements BookingItemService {
     public BookingDto addItemToBooking(AddBookingItemRequest request) {
 
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
-            throw new RuntimeException("Quantity must be greater than 0");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Quantity must be greater than 0");
         }
 
         User currentUser = getCurrentUser();
 
         Booking booking = bookingRepository.findById(request.getBookingId())
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
 
         if (!booking.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
         }
 
         if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new RuntimeException("Cannot modify completed booking");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Cannot modify completed booking");
         }
 
         BookingItem bookingItem = new BookingItem();
@@ -59,7 +61,7 @@ public class BookingItemServiceImplementation implements BookingItemService {
 
             PredefinedItem predefinedItem = predefinedItemRepository
                     .findById(request.getPredefinedItemId())
-                    .orElseThrow(() -> new RuntimeException("Predefined item not found"));
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Predefined item not found"));
 
             bookingItem.setPredefinedItem(predefinedItem);
 
@@ -77,7 +79,7 @@ public class BookingItemServiceImplementation implements BookingItemService {
                     .multiply(BigDecimal.valueOf(request.getQuantity()));
 
         } else {
-            throw new RuntimeException("Invalid item request");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid item request");
         }
 
         bookingItem.setPrice(totalPrice);
@@ -94,14 +96,14 @@ public class BookingItemServiceImplementation implements BookingItemService {
         User currentUser = getCurrentUser();
 
         BookingItem item = bookingItemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found"));
 
         if (!item.getBooking().getId().equals(bookingId)) {
-            throw new RuntimeException("Item does not belong to this booking");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Item does not belong to this booking");
         }
 
         if (!item.getBooking().getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
         }
 
         return mapToItemDto(item);
@@ -115,10 +117,10 @@ public class BookingItemServiceImplementation implements BookingItemService {
         User currentUser = getCurrentUser();
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
 
         if (!booking.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
         }
 
         return bookingItemRepository.findByBookingId(bookingId)
@@ -135,20 +137,20 @@ public class BookingItemServiceImplementation implements BookingItemService {
         User currentUser = getCurrentUser();
 
         BookingItem item = bookingItemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found"));
 
         Booking booking = item.getBooking();
 
         if (!booking.getId().equals(bookingId)) {
-            throw new RuntimeException("Invalid booking");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid booking");
         }
 
         if (!booking.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
         }
 
         if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new RuntimeException("Cannot modify completed booking");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Cannot modify completed booking");
         }
 
         bookingItemRepository.delete(item);
@@ -163,26 +165,26 @@ public class BookingItemServiceImplementation implements BookingItemService {
     public void updateQuantity(Long bookingId, Long itemId, Integer quantity) {
 
         if (quantity == null || quantity <= 0) {
-            throw new RuntimeException("Quantity must be greater than 0");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Quantity must be greater than 0");
         }
 
         User currentUser = getCurrentUser();
 
         BookingItem item = bookingItemRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found"));
 
         Booking booking = item.getBooking();
 
         if (!booking.getId().equals(bookingId)) {
-            throw new RuntimeException("Invalid booking");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid booking");
         }
 
         if (!booking.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
         }
 
         if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new RuntimeException("Cannot modify completed booking");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Cannot modify completed booking");
         }
 
         BigDecimal unitPrice = item.getPrice()
@@ -264,7 +266,7 @@ public class BookingItemServiceImplementation implements BookingItemService {
         String email = authentication.getName();
 
         if(email == null) {
-            throw new RuntimeException("Authentication error: email not found");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Authentication error: email not found");
         }
 
         return userRepository.findByEmail(email);

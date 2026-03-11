@@ -7,6 +7,8 @@ import com.shifting.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import com.shifting.exception.ApiException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -35,7 +37,7 @@ public class UserServiceImpl implements UserService {
     public User getUserByEmail(String email) {
         User user = userRepository.findByEmail(email);
         if (user == null) {
-            throw new RuntimeException("User not found with email: " + email);
+            throw new ApiException(HttpStatus.NOT_FOUND, "User not found with email: " + email);
         }
         return user;
     }
@@ -43,7 +45,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found with id: " + id));
     }
 
     @Override
