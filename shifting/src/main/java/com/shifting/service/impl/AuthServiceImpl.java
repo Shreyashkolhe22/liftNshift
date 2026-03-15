@@ -14,6 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.shifting.exception.ApiException;
+import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Prevent duplicate registrations
         if (userRepository.findByEmail(request.getEmail()) != null) {
-            throw new RuntimeException("Email already in use: " + request.getEmail());
+            throw new ApiException(HttpStatus.CONFLICT, "Email already in use: " + request.getEmail());
         }
 
         User user = new User();
