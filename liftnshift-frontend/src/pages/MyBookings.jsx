@@ -6,11 +6,11 @@ import Navbar from "../components/Navbar";
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
 const STATUS = {
-  PENDING:     { label: "PENDING",     color: "#B97A2A", rgb: "185,122,42",   bg: "#7C4F1A", icon: "⏳", textColor: "#E8A84A" },
-  CONFIRMED:   { label: "CONFIRMED",   color: "#1E4E7A", rgb: "30,78,122",    bg: "#1A3F6A", icon: "✅", textColor: "#4AADE8" },
-  IN_PROGRESS: { label: "IN PROGRESS", color: "#5B3E9E", rgb: "91,62,158",    bg: "#4A2E8A", icon: "🚛", textColor: "#A78BFA" },
-  COMPLETED:   { label: "COMPLETED",   color: "#1A6A42", rgb: "26,106,66",    bg: "#145A36", icon: "🏠", textColor: "#34D399" },
-  CANCELLED:   { label: "CANCELLED",   color: "#7A1E1E", rgb: "122,30,30",    bg: "#6A1515", icon: "✕",  textColor: "#F87171" },
+  PENDING: { label: "PENDING", color: "#B97A2A", rgb: "185,122,42", bg: "#7C4F1A", icon: "⏳", textColor: "#E8A84A" },
+  CONFIRMED: { label: "CONFIRMED", color: "#1E4E7A", rgb: "30,78,122", bg: "#1A3F6A", icon: "✅", textColor: "#4AADE8" },
+  IN_PROGRESS: { label: "IN PROGRESS", color: "#5B3E9E", rgb: "91,62,158", bg: "#4A2E8A", icon: "🚛", textColor: "#A78BFA" },
+  COMPLETED: { label: "COMPLETED", color: "#1A6A42", rgb: "26,106,66", bg: "#145A36", icon: "🏠", textColor: "#34D399" },
+  CANCELLED: { label: "CANCELLED", color: "#7A1E1E", rgb: "122,30,30", bg: "#6A1515", icon: "✕", textColor: "#F87171" },
 };
 
 const FILTERS = ["ALL", "PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -36,8 +36,8 @@ function padId(id) { return "#" + String(id).padStart(4, "0"); }
 
 // ─── BOOKING CARD — matches screenshot exactly ───────────────────────────────
 function BookingCard({ booking, onDelete, delay }) {
-  const navigate  = useNavigate();
-  const cardRef   = useRef(null);
+  const navigate = useNavigate();
+  const cardRef = useRef(null);
   const overlayRef = useRef(null);
   const st = STATUS[booking.status] || STATUS.PENDING;
 
@@ -53,21 +53,15 @@ function BookingCard({ booking, onDelete, delay }) {
   }, []);
 
   // Reveal overlay on hover
-  const clipStart  = "circle(70px at 50% 0%)";
+  const clipStart = "circle(70px at 50% 0%)";
   const clipExpand = "circle(200% at 50% 0%)";
 
   function onEnter() {
-  if (overlayRef.current) {
-    overlayRef.current.style.transition = "clip-path 1.4s cubic-bezier(0.16,1,0.3,1)";
-    overlayRef.current.style.clipPath = clipExpand;
+    if (overlayRef.current) overlayRef.current.style.clipPath = clipExpand;
   }
-}
   function onLeave() {
-  if (overlayRef.current) {
-    overlayRef.current.style.transition = "clip-path 1.8s cubic-bezier(0.16,1,0.3,1)";
-    overlayRef.current.style.clipPath = clipStart;
+    if (overlayRef.current) overlayRef.current.style.clipPath = clipStart;
   }
-}
 
   function handleDelete(e) {
     e.stopPropagation();
@@ -128,7 +122,10 @@ function BookingCard({ booking, onDelete, delay }) {
             </div>
           </div>
 
-          <br></br>
+          {/* Truck divider */}
+          <div className="card-truck-row">
+            <span className="card-truck-icon">🚛</span>
+          </div>
 
           {/* Drop */}
           <div className="card-location-row">
@@ -175,7 +172,7 @@ function BookingCard({ booking, onDelete, delay }) {
               borderColor: "rgba(255,255,255,0.2)",
               color: "#fff",
             } : {}}
-            onClick={(e) => { e.stopPropagation(); navigate(`/bookings/${booking.id}`); }}
+            onClick={(e) => { e.stopPropagation(); navigate(`/bookings/${booking.id}/detail`); }}
           >
             View Details →
           </button>
@@ -186,10 +183,10 @@ function BookingCard({ booking, onDelete, delay }) {
             title="Delete booking"
           >
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14H6L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4h6v2"/>
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14H6L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4h6v2" />
             </svg>
           </button>
         </div>
@@ -208,7 +205,7 @@ function BookingCard({ booking, onDelete, delay }) {
       }}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      onClick={() => navigate(`/bookings/${booking.id}`)}
+      onClick={() => navigate(`/bookings/${booking.id}/detail`)}
     >
       {/* BASE */}
       <div className="bk-base">
@@ -235,6 +232,7 @@ function EmptyState({ filtered }) {
   const navigate = useNavigate();
   return (
     <div className="mb-empty">
+      <div className="mb-empty-icon">{filtered ? "🔍" : "🚛"}</div>
       <h3 className="mb-empty-title">{filtered ? "No matching bookings" : "No bookings yet"}</h3>
       <p className="mb-empty-desc">
         {filtered ? "Try a different filter." : "Create your first home shifting booking."}
@@ -258,7 +256,7 @@ export default function MyBookings() {
   useEffect(() => { dispatch(fetchMyBookings()); }, [dispatch]);
 
   const filtered = filter === "ALL" ? bookings : bookings.filter((b) => b.status === filter);
-  const counts   = {};
+  const counts = {};
   bookings.forEach((b) => { counts[b.status] = (counts[b.status] || 0) + 1; });
 
   return (
@@ -283,7 +281,7 @@ export default function MyBookings() {
           {/* FILTER PILLS */}
           <div className="mb-filters">
             {FILTERS.map((f) => {
-              const st    = STATUS[f];
+              const st = STATUS[f];
               const count = f === "ALL" ? bookings.length : (counts[f] || 0);
               const isActive = filter === f;
               return (
@@ -308,7 +306,7 @@ export default function MyBookings() {
 
           {loading && (
             <div className="mb-grid">
-              {[0,1,2,3].map((i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="mb-skeleton" style={{ animationDelay: `${i * 80}ms` }} />
               ))}
             </div>
@@ -412,7 +410,7 @@ a{text-decoration:none;color:inherit}
   position:absolute;
   inset:0;z-index:2;
   clip-path:circle(70px at 50% 0%);
-  transition:clip-path 1.4s cubic-bezier(0.16,1,0.3,1);
+  transition:clip-path 0.72s cubic-bezier(0.76,0,0.24,1);
   border-radius:18px;
 }
 

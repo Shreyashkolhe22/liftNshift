@@ -1,28 +1,27 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 
-// ── Pages ────────────────────────────────────────────────────────────────────
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
 import MyBookings from "../pages/MyBookings";
 import CreateBooking from "../pages/CreateBooking";
+import BookingConfirmation from "../pages/BookingConfirmation";
+import BookingDetail from "../pages/BookingDetail";
 
-// ── Coming soon ───────────────────────────────────────────────────────────────
-// import BookingDetail from "../pages/BookingDetail";
-// import Profile       from "../pages/Profile";
+// import Profile from "../pages/Profile";
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* ── Public ──────────────────────────────────────────── */}
+        {/* ── Public ─────────────────────────────────────── */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ── Protected ───────────────────────────────────────── */}
+        {/* ── Protected ──────────────────────────────────── */}
         <Route path="/dashboard" element={
           <ProtectedRoute><Dashboard /></ProtectedRoute>
         } />
@@ -35,17 +34,23 @@ export default function AppRouter() {
           <ProtectedRoute><CreateBooking /></ProtectedRoute>
         } />
 
-        {/* Uncomment as you build */}
-        {/*
-        <Route path="/bookings/:id" element={
+        {/* Confirmation — shown after Step 2 finishes */}
+        <Route path="/bookings/:id/confirm" element={
+          <ProtectedRoute><BookingConfirmation /></ProtectedRoute>
+        } />
+
+        {/* Detail — reached from My Bookings "View Details" */}
+        <Route path="/bookings/:id/detail" element={
           <ProtectedRoute><BookingDetail /></ProtectedRoute>
         } />
+
+        {/*
         <Route path="/profile" element={
           <ProtectedRoute><Profile /></ProtectedRoute>
         } />
         */}
 
-        {/* ── Fallback ────────────────────────────────────────── */}
+        {/* ── Fallback ───────────────────────────────────── */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
 
       </Routes>

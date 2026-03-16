@@ -430,7 +430,7 @@ export default function CreateBooking() {
     }
 
     function handleFinish() {
-        navigate(`/bookings/${booking.id}`);
+        navigate(`/bookings/${booking.id}/confirm`);
     }
 
     return (
