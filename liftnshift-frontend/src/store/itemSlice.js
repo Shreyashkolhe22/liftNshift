@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../utils/axiosInstance";
 
-// ── ASYNC THUNKS ─────────────────────────────────────────────────────────────
+// ─── ASYNC THUNKS ─────────────────────────────────────────────────────────────
 
 export const fetchPredefinedItems = createAsyncThunk(
   "item/fetchPredefined",
@@ -21,9 +21,7 @@ export const fetchItemsByBooking = createAsyncThunk(
   "item/fetchByBooking",
   async (bookingId, thunkAPI) => {
     try {
-      const res = await axiosInstance.get(
-        `/api/bookings/${bookingId}/items`
-      );
+      const res = await axiosInstance.get(`/api/bookings/${bookingId}/items`);
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -33,18 +31,22 @@ export const fetchItemsByBooking = createAsyncThunk(
   }
 );
 
+// ── Smart thunk: builds correct payload based on type ──
+// Predefined: { bookingId, predefinedItemId, quantity }
+// Custom:     { bookingId, customName, quantity, size }
 export const addItemToBooking = createAsyncThunk(
   "item/add",
-  async ({ bookingId, predefinedItemId, customName, quantity, size }, thunkAPI) => {
+  async (payload, thunkAPI) => {
     try {
-      const res = await axiosInstance.post("/api/bookings/items", {
-        bookingId,
-        predefinedItemId,
-        customName,
-        quantity,
-        size,
-      });
-      return res.data; // returns updated BookingDto
+      const { bookingId, predefinedItemId, customName, quantity, size } = payload;
+
+      // Build correct body — never mix predefined and custom fields
+      const body = predefinedItemId
+        ? { bookingId, predefinedItemId, quantity }
+        : { bookingId, customName, quantity, size };
+
+      const res = await axiosInstance.post("/api/bookings/items", body);
+      return res.data; // BookingDto
     } catch (err) {
       return thunkAPI.rejectWithValue(
         err.response?.data?.message || "Failed to add item"
@@ -57,9 +59,7 @@ export const deleteItem = createAsyncThunk(
   "item/delete",
   async ({ bookingId, itemId }, thunkAPI) => {
     try {
-      await axiosInstance.delete(
-        `/api/bookings/${bookingId}/items/${itemId}`
-      );
+      await axiosInstance.delete(`/api/bookings/${bookingId}/items/${itemId}`);
       return itemId;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -87,12 +87,12 @@ export const updateItemQuantity = createAsyncThunk(
   }
 );
 
-// ── SLICE ────────────────────────────────────────────────────────────────────
+// ─── SLICE ────────────────────────────────────────────────────────────────────
 
 const itemSlice = createSlice({
   name: "item",
   initialState: {
-    catalog: [],        // predefined items from /api/predefined-items
+    catalog: [],   // predefined items list
     bookingItems: [],   // items for currently viewed booking
     loading: false,
     error: null,
@@ -100,12 +100,14 @@ const itemSlice = createSlice({
   reducers: {
     clearItems(state) {
       state.bookingItems = [];
+      state.error = null;
     },
     clearItemError(state) {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
+
     // ── Predefined catalog ──
     builder
       .addCase(fetchPredefinedItems.pending, (state) => {
@@ -135,18 +137,16 @@ const itemSlice = createSlice({
         state.error = action.payload;
       });
 
-    // ── Add item ──
+    // ── Add item (predefined or custom) ──
+    // We don't update state here — caller re-fetches via fetchItemsByBooking
     builder
       .addCase(addItemToBooking.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(addItemToBooking.fulfilled, (state) => {
-        state.loading = false;
-        // Items list will be re-fetched via fetchItemsByBooking after add
+        // Items refreshed by explicit fetchItemsByBooking call after this
       })
       .addCase(addItemToBooking.rejected, (state, action) => {
-        state.loading = false;
         state.error = action.payload;
       });
 
