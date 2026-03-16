@@ -25,15 +25,17 @@ function formatDate(d) {
 }
 
 const STATUS_CFG = {
-    PENDING: { label: "Pending", color: "#FBBF24", bg: "rgba(251,191,36,.12)", next: ["CONFIRMED", "CANCELLED"] },
-    CONFIRMED: { label: "Confirmed", color: "#3B9EFF", bg: "rgba(59,158,255,.12)", next: ["IN_PROGRESS", "CANCELLED"] },
-    IN_PROGRESS: { label: "In Progress", color: "#A78BFA", bg: "rgba(167,139,250,.12)", next: ["COMPLETED", "CANCELLED"] },
+    // next = what the USER can do (only cancel while pending or confirmed)
+    PENDING: { label: "Pending", color: "#FBBF24", bg: "rgba(251,191,36,.12)", next: ["CANCELLED"] },
+    CONFIRMED: { label: "Confirmed", color: "#3B9EFF", bg: "rgba(59,158,255,.12)", next: ["CANCELLED"] },
+    IN_PROGRESS: { label: "In Progress", color: "#A78BFA", bg: "rgba(167,139,250,.12)", next: [] },
     COMPLETED: { label: "Completed", color: "#34D399", bg: "rgba(52,211,153,.12)", next: [] },
     CANCELLED: { label: "Cancelled", color: "#F87171", bg: "rgba(248,113,113,.12)", next: [] },
 };
 
 const SIZES = ["SMALL", "MEDIUM", "LARGE"];
-const canModify = (status) => !["COMPLETED", "CANCELLED"].includes(status);
+const canAddItems = (status) => status === "PENDING";
+const canCancel = (status) => ["PENDING", "CONFIRMED"].includes(status);
 
 // ─── ADD ITEM PANEL ───────────────────────────────────────────────────────────
 function AddItemPanel({ bookingId, onDone }) {
@@ -149,7 +151,8 @@ export default function BookingDetail() {
 
     const status = booking?.status || "PENDING";
     const st = STATUS_CFG[status] || STATUS_CFG.PENDING;
-    const editable = canModify(status);
+    const addable = canAddItems(status);   // only PENDING
+    const cancellable = canCancel(status);   // PENDING or CONFIRMED
     const subtotal = bookingItems.reduce((s, i) => s + Number(i.price || 0), 0);
 
     async function handleStatusChange(newStatus) {
@@ -162,12 +165,13 @@ export default function BookingDetail() {
     }
 
     async function handleDelete() {
-        if (!window.confirm("Delete this booking? This cannot be undone.")) return;
+        if (!window.confirm("Cancel this booking? This cannot be undone.")) return;
         setDeleting(true);
         try {
-            await dispatch(deleteBooking(id)).unwrap();
-            navigate("/my-bookings");
-        } catch (err) { setError(err?.message || "Failed to delete booking."); setDeleting(false); }
+            await dispatch(updateBookingStatus({ bookingId: id, status: "CANCELLED" })).unwrap();
+            await dispatch(fetchBookingById(id));
+        } catch (err) { setError(err?.message || "Failed to cancel booking."); }
+        setDeleting(false);
     }
 
     async function handleRemoveItem(itemId) {
@@ -241,7 +245,7 @@ export default function BookingDetail() {
 
                                     {/* Actions */}
                                     <div className="bd-action-row">
-                                        {editable && (
+                                        {addable && (
                                             <button
                                                 className="bd-btn-add"
                                                 onClick={() => setShowAddPanel(v => !v)}
@@ -249,20 +253,27 @@ export default function BookingDetail() {
                                                 {showAddPanel ? "− Close" : "+ Add Item"}
                                             </button>
                                         )}
-                                        <button
-                                            className="bd-btn-delete"
-                                            onClick={handleDelete}
-                                            disabled={deleting}
-                                        >
-                                            {deleting ? "Deleting…" : "Delete Booking"}
-                                        </button>
+                                        {cancellable && (
+                                            <button
+                                                className="bd-btn-delete"
+                                                onClick={handleDelete}
+                                                disabled={deleting}
+                                            >
+                                                {deleting ? "Cancelling…" : "Cancel Booking"}
+                                            </button>
+                                        )}
+                                        {!cancellable && !["COMPLETED"].includes(status) && status !== "CANCELLED" && (
+                                            <div className="bd-locked-note">
+                                                Booking is {st.label.toLowerCase()} — no changes allowed
+                                            </div>
+                                        )}
                                     </div>
 
                                     {error && <div className="bd-error" style={{ marginTop: 14 }}>{error}</div>}
                                 </div>
 
-                                {/* Add item panel */}
-                                {showAddPanel && editable && (
+                                {/* Add item panel — only when PENDING */}
+                                {showAddPanel && addable && (
                                     <AddItemPanel
                                         bookingId={Number(id)}
                                         onDone={() => setShowAddPanel(false)}
@@ -283,7 +294,7 @@ export default function BookingDetail() {
                                                 <ItemRow
                                                     key={item.id}
                                                     item={item}
-                                                    editable={editable}
+                                                    editable={addable}
                                                     bookingId={id}
                                                     onRemove={handleRemoveItem}
                                                     onQtyChange={handleQtyChange}
@@ -319,24 +330,30 @@ export default function BookingDetail() {
                                     <div className="bd-section-label">Status Timeline</div>
                                     <StatusTimeline current={status} />
 
-                                    {/* Update status buttons */}
+                                    {/* Cancel option — shown only for PENDING and CONFIRMED */}
                                     {st.next.length > 0 && (
                                         <div className="bd-status-actions">
-                                            <div className="bd-section-label" style={{ marginBottom: 10 }}>Update Status</div>
-                                            {st.next.map((ns) => {
-                                                const nst = STATUS_CFG[ns];
-                                                return (
-                                                    <button
-                                                        key={ns}
-                                                        className="bd-status-btn"
-                                                        style={{ borderColor: `${nst.color}40`, color: nst.color }}
-                                                        onClick={() => handleStatusChange(ns)}
-                                                        disabled={statusUpdating}
-                                                    >
-                                                        {statusUpdating ? "Updating…" : `Mark as ${nst.label}`}
-                                                    </button>
-                                                );
-                                            })}
+                                            <div className="bd-section-label" style={{ marginBottom: 10 }}>
+                                                Cancel Booking
+                                            </div>
+                                            <p className="bd-cancel-note">
+                                                You can cancel this booking while it is {st.label.toLowerCase()}.
+                                                Once in progress, cancellation is not available.
+                                            </p>
+                                            <button
+                                                className="bd-cancel-btn"
+                                                onClick={() => handleStatusChange("CANCELLED")}
+                                                disabled={statusUpdating}
+                                            >
+                                                {statusUpdating ? "Cancelling…" : "Cancel this booking"}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Status managed by service team note */}
+                                    {status !== "CANCELLED" && st.next.length === 0 && (
+                                        <div className="bd-managed-note">
+                                            Status is managed by the LiftNShift team.
                                         </div>
                                     )}
                                 </div>
@@ -569,10 +586,13 @@ a{text-decoration:none;color:inherit}
 .bd-tl-text{font-size:.82rem;color:var(--muted);padding:2px 0 24px;transition:color .3s}
 
 /* STATUS ACTIONS */
-.bd-status-actions{padding-top:16px;border-top:1px solid var(--b);display:flex;flex-direction:column;gap:8px}
-.bd-status-btn{background:none;border:1px solid;padding:10px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:500;cursor:pointer;transition:background .2s;text-align:left}
-.bd-status-btn:hover:not(:disabled){opacity:.85;background:rgba(255,255,255,.03)}
-.bd-status-btn:disabled{opacity:.5;cursor:not-allowed}
+.bd-status-actions{padding-top:16px;border-top:1px solid var(--b);display:flex;flex-direction:column;gap:10px}
+.bd-cancel-note{font-size:.78rem;color:var(--muted);line-height:1.6;padding:10px 12px;background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.1);border-radius:8px}
+.bd-cancel-btn{background:none;border:1.5px solid rgba(248,113,113,.35);color:#F87171;padding:11px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:500;cursor:pointer;transition:background .2s,border-color .2s;text-align:left}
+.bd-cancel-btn:hover:not(:disabled){background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.6)}
+.bd-cancel-btn:disabled{opacity:.5;cursor:not-allowed}
+.bd-managed-note{font-size:.74rem;color:var(--muted);padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid var(--b);border-radius:8px;line-height:1.6;margin-top:16px}
+.bd-locked-note{font-size:.76rem;color:var(--muted);padding:8px 12px;background:rgba(255,255,255,.02);border:1px solid var(--b);border-radius:8px}
 
 /* RESPONSIVE */
 @media(max-width:860px){.bd-grid{grid-template-columns:1fr}.bd-right{position:static}}
