@@ -166,9 +166,9 @@ export default function BookingConfirmation() {
                                             No items added.{" "}
                                             <button
                                                 className="bc-link"
-                                                onClick={() => navigate(`/bookings/new`)}
+                                                onClick={() => navigate(`/bookings/${id}/detail`)}
                                             >
-                                                Add items
+                                                Add items first
                                             </button>
                                         </div>
                                     ) : (
@@ -273,7 +273,7 @@ export default function BookingConfirmation() {
 
                                     <button
                                         className="bc-back-btn"
-                                        onClick={() => navigate(-1)}
+                                        onClick={() => navigate(`/bookings/${id}/detail`)}
                                     >
                                         ← Go back &amp; edit items
                                     </button>
