@@ -33,7 +33,11 @@ const STATUS_CFG = {
     CANCELLED: { label: "Cancelled", color: "#F87171", bg: "rgba(248,113,113,.12)", next: [] },
 };
 
-const SIZES = ["SMALL", "MEDIUM", "LARGE"];
+const SIZES = [
+    { value: "SMALL", label: "Small", price: 1000 },
+    { value: "MEDIUM", label: "Medium", price: 2000 },
+    { value: "LARGE", label: "Large", price: 3000 },
+];
 const canAddItems = (status) => status === "PENDING";
 
 // ─── ADD ITEM PANEL ───────────────────────────────────────────────────────────
@@ -113,10 +117,24 @@ function AddItemPanel({ bookingId, onDone }) {
                         <label className="bd-label">Size</label>
                         <div className="bd-size-row">
                             {SIZES.map((s) => (
-                                <button key={s} className={`bd-size-btn ${customSize === s ? "bd-size-active" : ""}`} onClick={() => setCustomSize(s)}>
-                                    {s.charAt(0) + s.slice(1).toLowerCase()}
+                                <button
+                                    key={s.value}
+                                    className={`bd-size-btn ${customSize === s.value ? "bd-size-active" : ""}`}
+                                    onClick={() => setCustomSize(s.value)}
+                                >
+                                    <span className="bd-size-name">{s.label}</span>
+                                    <span className="bd-size-price">₹{s.price.toLocaleString("en-IN")}</span>
                                 </button>
                             ))}
+                        </div>
+                        <div className="bd-price-preview">
+                            Estimated price &nbsp;·&nbsp;
+                            <span className="bd-price-val">
+                                ₹{(SIZES.find(s => s.value === customSize)?.price * customQty).toLocaleString("en-IN")}
+                            </span>
+                            <span className="bd-price-note">
+                                &nbsp;({SIZES.find(s => s.value === customSize)?.price.toLocaleString("en-IN")} × {customQty})
+                            </span>
                         </div>
                     </div>
                     <button className="bd-btn-primary" style={{ marginTop: 18 }} onClick={handleAddCustom} disabled={loading}>
@@ -515,9 +533,16 @@ a{text-decoration:none;color:inherit}
 .bd-qty-btn:hover{background:rgba(244,123,32,.15)}
 .bd-qty-num{font-size:.9rem;font-weight:600;min-width:20px;text-align:center;color:var(--light)}
 .bd-size-row{display:flex;gap:8px}
-.bd-size-btn{flex:1;padding:9px;border-radius:8px;background:var(--card2);border:1.5px solid var(--b);font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--muted);cursor:pointer;transition:all .2s}
-.bd-size-btn:hover{border-color:var(--b2);color:var(--light)}
-.bd-size-active{background:rgba(244,123,32,.1) !important;border-color:rgba(244,123,32,.4) !important;color:var(--o) !important;font-weight:500}
+.bd-size-btn{flex:1;padding:10px 8px;border-radius:8px;background:var(--card2);border:1.5px solid var(--b);font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bd-size-btn:hover{border-color:var(--b2);background:var(--card)}
+.bd-size-name{font-size:.8rem;color:var(--muted);font-weight:500;transition:color .2s}
+.bd-size-price{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.04em;color:var(--muted);transition:color .2s}
+.bd-size-active{background:rgba(244,123,32,.08) !important;border-color:rgba(244,123,32,.4) !important}
+.bd-size-active .bd-size-name{color:var(--o) !important}
+.bd-size-active .bd-size-price{color:var(--o) !important}
+.bd-price-preview{margin-top:10px;padding:9px 12px;background:rgba(244,123,32,.05);border:1px solid rgba(244,123,32,.12);border-radius:8px;font-size:.8rem;color:var(--muted);display:flex;align-items:center;flex-wrap:wrap}
+.bd-price-val{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.04em;color:var(--o);margin:0 2px}
+.bd-price-note{font-size:.72rem;color:var(--muted);opacity:.7}
 .bd-btn-primary{background:var(--o);color:#fff;border:none;padding:12px 22px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;transition:background .2s,transform .15s;box-shadow:0 4px 16px rgba(244,123,32,.3)}
 .bd-btn-primary:hover:not(:disabled){background:var(--od);transform:translateY(-1px)}
 .bd-btn-primary:disabled{opacity:.55;cursor:not-allowed}

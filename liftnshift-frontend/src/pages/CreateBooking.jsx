@@ -18,7 +18,11 @@ function formatPrice(p) {
     return "₹" + Number(p).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 }
 
-const SIZES = ["SMALL", "MEDIUM", "LARGE"];
+const SIZES = [
+    { value: "SMALL", label: "Small", price: 1000 },
+    { value: "MEDIUM", label: "Medium", price: 2000 },
+    { value: "LARGE", label: "Large", price: 3000 },
+];
 
 // ─── STEP INDICATOR ───────────────────────────────────────────────────────────
 function StepBar({ step }) {
@@ -256,13 +260,24 @@ function CustomItemCard({ bookingId, onAdded }) {
                         <div className="ci-size-row">
                             {SIZES.map((s) => (
                                 <button
-                                    key={s}
-                                    className={`ci-size-btn ${size === s ? "ci-size-active" : ""}`}
-                                    onClick={() => setSize(s)}
+                                    key={s.value}
+                                    className={`ci-size-btn ${size === s.value ? "ci-size-active" : ""}`}
+                                    onClick={() => setSize(s.value)}
                                 >
-                                    {s.charAt(0) + s.slice(1).toLowerCase()}
+                                    <span className="ci-size-name">{s.label}</span>
+                                    <span className="ci-size-price">₹{s.price.toLocaleString("en-IN")}</span>
                                 </button>
                             ))}
+                        </div>
+                        {/* Live price estimate */}
+                        <div className="ci-price-preview">
+                            Estimated price &nbsp;·&nbsp;
+                            <span className="ci-price-val">
+                                ₹{(SIZES.find(s => s.value === size)?.price * qty).toLocaleString("en-IN")}
+                            </span>
+                            <span className="ci-price-note">
+                                &nbsp;({SIZES.find(s => s.value === size)?.price.toLocaleString("en-IN")} × {qty})
+                            </span>
                         </div>
                     </div>
 
@@ -613,13 +628,27 @@ a{text-decoration:none;color:inherit}
 .ci-qty-row{display:flex;align-items:center;gap:12px}
 .ci-size-row{display:flex;gap:10px}
 .ci-size-btn{
-  flex:1;padding:10px;border-radius:8px;
+  flex:1;padding:10px 8px;border-radius:8px;
   background:var(--card);border:1.5px solid var(--b);
-  font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--muted);
-  cursor:pointer;transition:all .2s;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+  transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
 }
-.ci-size-btn:hover{border-color:var(--b2);color:var(--light)}
-.ci-size-active{background:rgba(244,123,32,.12) !important;border-color:rgba(244,123,32,.5) !important;color:var(--o) !important;font-weight:500}
+.ci-size-btn:hover{border-color:var(--b2);background:var(--card2)}
+.ci-size-name{font-size:.82rem;color:var(--muted);font-weight:500;transition:color .2s}
+.ci-size-price{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.04em;color:var(--muted);transition:color .2s}
+.ci-size-active{background:rgba(244,123,32,.08) !important;border-color:rgba(244,123,32,.5) !important}
+.ci-size-active .ci-size-name{color:var(--o) !important}
+.ci-size-active .ci-size-price{color:var(--o) !important}
+.ci-price-preview{
+  margin-top:10px;padding:10px 14px;
+  background:rgba(244,123,32,.05);
+  border:1px solid rgba(244,123,32,.12);
+  border-radius:8px;font-size:.82rem;color:var(--muted);
+  display:flex;align-items:center;flex-wrap:wrap;
+}
+.ci-price-val{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.04em;color:var(--o);margin:0 2px}
+.ci-price-note{font-size:.75rem;color:var(--muted);opacity:.7}
 
 /* ADDED ITEMS */
 .ai-card{padding:28px}
