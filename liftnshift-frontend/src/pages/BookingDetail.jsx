@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchBookingById, deleteBooking, updateBookingStatus } from "../store/bookingSlice";
+import { fetchBookingById, updateBookingStatus } from "../store/bookingSlice";
 import {
     fetchItemsByBooking,
     addItemToBooking,
@@ -35,7 +35,6 @@ const STATUS_CFG = {
 
 const SIZES = ["SMALL", "MEDIUM", "LARGE"];
 const canAddItems = (status) => status === "PENDING";
-const canCancel = (status) => ["PENDING", "CONFIRMED"].includes(status);
 
 // ─── ADD ITEM PANEL ───────────────────────────────────────────────────────────
 function AddItemPanel({ bookingId, onDone }) {
@@ -140,7 +139,6 @@ export default function BookingDetail() {
 
     const [showAddPanel, setShowAddPanel] = useState(false);
     const [statusUpdating, setStatusUpdating] = useState(false);
-    const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
@@ -152,7 +150,6 @@ export default function BookingDetail() {
     const status = booking?.status || "PENDING";
     const st = STATUS_CFG[status] || STATUS_CFG.PENDING;
     const addable = canAddItems(status);   // only PENDING
-    const cancellable = canCancel(status);   // PENDING or CONFIRMED
     const subtotal = bookingItems.reduce((s, i) => s + Number(i.price || 0), 0);
 
     async function handleStatusChange(newStatus) {
@@ -162,16 +159,6 @@ export default function BookingDetail() {
             await dispatch(fetchBookingById(id));
         } catch (err) { setError(err?.message || "Failed to update status."); }
         setStatusUpdating(false);
-    }
-
-    async function handleDelete() {
-        if (!window.confirm("Cancel this booking? This cannot be undone.")) return;
-        setDeleting(true);
-        try {
-            await dispatch(updateBookingStatus({ bookingId: id, status: "CANCELLED" })).unwrap();
-            await dispatch(fetchBookingById(id));
-        } catch (err) { setError(err?.message || "Failed to cancel booking."); }
-        setDeleting(false);
     }
 
     async function handleRemoveItem(itemId) {
@@ -243,7 +230,7 @@ export default function BookingDetail() {
                                         </div>
                                     </div>
 
-                                    {/* Actions */}
+                                    {/* Actions — Add items only when PENDING */}
                                     <div className="bd-action-row">
                                         {addable && (
                                             <button
@@ -252,20 +239,6 @@ export default function BookingDetail() {
                                             >
                                                 {showAddPanel ? "− Close" : "+ Add Item"}
                                             </button>
-                                        )}
-                                        {cancellable && (
-                                            <button
-                                                className="bd-btn-delete"
-                                                onClick={handleDelete}
-                                                disabled={deleting}
-                                            >
-                                                {deleting ? "Cancelling…" : "Cancel Booking"}
-                                            </button>
-                                        )}
-                                        {!cancellable && !["COMPLETED"].includes(status) && status !== "CANCELLED" && (
-                                            <div className="bd-locked-note">
-                                                Booking is {st.label.toLowerCase()} — no changes allowed
-                                            </div>
                                         )}
                                     </div>
 
@@ -517,9 +490,6 @@ a{text-decoration:none;color:inherit}
 .bd-action-row{display:flex;gap:10px;flex-wrap:wrap}
 .bd-btn-add{background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.25);color:var(--o);padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;transition:background .2s,border-color .2s}
 .bd-btn-add:hover{background:rgba(244,123,32,.18)}
-.bd-btn-delete{background:none;border:1px solid rgba(248,113,113,.2);color:#F87171;padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;transition:background .2s,border-color .2s}
-.bd-btn-delete:hover:not(:disabled){background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.4)}
-.bd-btn-delete:disabled{opacity:.5;cursor:not-allowed}
 
 /* ADD ITEM PANEL */
 .bd-add-panel{background:var(--card);border:1px solid rgba(244,123,32,.2);border-radius:16px;padding:24px;animation:fup .3s ease both}
