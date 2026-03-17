@@ -258,6 +258,15 @@ export default function BookingDetail() {
                                                 {showAddPanel ? "− Close" : "+ Add Item"}
                                             </button>
                                         )}
+                                        {/* Review & Confirm — only when PENDING */}
+                                        {status === "PENDING" && (
+                                            <button
+                                                className="bd-btn-confirm"
+                                                onClick={() => navigate(`/bookings/${id}/confirm`)}
+                                            >
+                                                Review &amp; Confirm →
+                                            </button>
+                                        )}
                                     </div>
 
                                     {error && <div className="bd-error" style={{ marginTop: 14 }}>{error}</div>}
@@ -508,6 +517,15 @@ a{text-decoration:none;color:inherit}
 .bd-action-row{display:flex;gap:10px;flex-wrap:wrap}
 .bd-btn-add{background:rgba(244,123,32,.1);border:1px solid rgba(244,123,32,.25);color:var(--o);padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;transition:background .2s,border-color .2s}
 .bd-btn-add:hover{background:rgba(244,123,32,.18)}
+.bd-btn-confirm{
+  background:var(--o);color:#fff;border:none;
+  padding:10px 20px;border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;
+  cursor:pointer;
+  transition:background .2s,transform .15s,box-shadow .2s;
+  box-shadow:0 4px 16px rgba(244,123,32,.3);
+}
+.bd-btn-confirm:hover{background:var(--od);transform:translateY(-1px);box-shadow:0 8px 24px rgba(244,123,32,.4)}
 
 /* ADD ITEM PANEL */
 .bd-add-panel{background:var(--card);border:1px solid rgba(244,123,32,.2);border-radius:16px;padding:24px;animation:fup .3s ease both}
