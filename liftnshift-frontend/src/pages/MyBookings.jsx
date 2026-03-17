@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { fetchMyBookings, deleteBooking } from "../store/bookingSlice";
+import { fetchMyBookings } from "../store/bookingSlice";
 import Navbar from "../components/Navbar";
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ function truncate(s, n = 20) {
 function padId(id) { return "#" + String(id).padStart(4, "0"); }
 
 // ─── BOOKING CARD — matches screenshot exactly ───────────────────────────────
-function BookingCard({ booking, onDelete, delay }) {
+function BookingCard({ booking, delay }) {
   const navigate = useNavigate();
   const cardRef = useRef(null);
   const overlayRef = useRef(null);
@@ -61,11 +61,6 @@ function BookingCard({ booking, onDelete, delay }) {
   }
   function onLeave() {
     if (overlayRef.current) overlayRef.current.style.clipPath = clipStart;
-  }
-
-  function handleDelete(e) {
-    e.stopPropagation();
-    if (window.confirm("Delete this booking?")) onDelete(booking.id);
   }
 
   // Card content — reused for both base and overlay
@@ -175,19 +170,6 @@ function BookingCard({ booking, onDelete, delay }) {
             onClick={(e) => { e.stopPropagation(); navigate(`/bookings/${booking.id}/detail`); }}
           >
             View Details →
-          </button>
-          <button
-            className="card-btn-del"
-            style={overlay ? { borderColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.4)" } : {}}
-            onClick={handleDelete}
-            title="Delete booking"
-          >
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14H6L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4h6v2" />
-            </svg>
           </button>
         </div>
       </>
@@ -320,7 +302,6 @@ export default function MyBookings() {
                 <BookingCard
                   key={b.id}
                   booking={b}
-                  onDelete={(id) => dispatch(deleteBooking(id))}
                   delay={`${i * 55}ms`}
                 />
               ))}
@@ -574,19 +555,6 @@ a{text-decoration:none;color:inherit}
   text-align:center;
 }
 .card-btn-view:hover{background:rgba(255,255,255,.09)}
-
-.card-btn-del{
-  background:none;
-  border:1px solid var(--b);
-  color:var(--muted);
-  width:38px;height:38px;
-  border-radius:9px;
-  cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  transition:background .2s,border-color .2s,color .2s;
-}
-.card-btn-del:hover{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:#F87171}
 
 /* EMPTY */
 .mb-empty{text-align:center;padding:90px 20px;animation:fup .5s ease both}
