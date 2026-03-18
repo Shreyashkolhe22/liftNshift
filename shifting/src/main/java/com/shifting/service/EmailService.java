@@ -5,6 +5,7 @@ import com.shifting.model.BookingItem;
 import com.shifting.model.Payment;
 import com.shifting.model.User;
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -99,10 +101,13 @@ public class EmailService {
     // ─────────────────────────────────────────────────────────────────────────
     // CORE SENDER
     // ─────────────────────────────────────────────────────────────────────────
-    private void send(String to, String subject, String html) throws MessagingException {
+    private void send(String to, String subject, String html) throws Exception {
         MimeMessage msg = mailSender.createMimeMessage();
         MimeMessageHelper h = new MimeMessageHelper(msg, true, "UTF-8");
-        h.setFrom(fromEmail, "LiftNShift");
+
+        // Use InternetAddress to avoid UnsupportedEncodingException
+        h.setFrom(new InternetAddress(fromEmail,
+                "LiftNShift", StandardCharsets.UTF_8.name()));
         h.setTo(to);
         h.setSubject(subject);
         h.setText(html, true);
@@ -179,7 +184,7 @@ public class EmailService {
 
         BigDecimal subtotal = items.stream()
                 .map(BookingItem::getPrice)
-                .filter(p -> p != null)
+                .filter(pr -> pr != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal tax   = subtotal.multiply(BigDecimal.valueOf(0.05))
                 .setScale(2, RoundingMode.HALF_UP);

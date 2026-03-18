@@ -9,6 +9,7 @@ import com.shifting.payload.dto.PaymentDto;
 import com.shifting.repository.BookingRepository;
 import com.shifting.repository.PaymentRepository;
 import com.shifting.service.UserService;
+import com.shifting.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +18,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.crypto.Mac;
@@ -43,6 +45,7 @@ public class PaymentController {
     private final PaymentRepository  paymentRepository;
     private final BookingRepository  bookingRepository;
     private final UserService        userService;
+    private final EmailService       emailService;
 
     // ── 1. Create Order ───────────────────────────────────────────────────────
     // Creates a Razorpay order AND saves a CREATED payment record to DB
@@ -127,6 +130,7 @@ public class PaymentController {
     // then marks booking as CONFIRMED — all in one atomic flow
     @PostMapping("/verify")
     @Operation(summary = "Verify payment and confirm booking")
+    @Transactional
     public ResponseEntity<Map<String, Object>> verifyPayment(
             @RequestBody Map<String, String> request) {
 
@@ -180,6 +184,37 @@ public class PaymentController {
             Booking booking = payment.getBooking();
             booking.setStatus(BookingStatus.CONFIRMED);
             bookingRepository.save(booking);
+
+            // Ensure lazy associations are initialized while session is open
+            User userToEmail = booking.getUser();
+            if (userToEmail != null) {
+                // touch simple fields to initialize proxy
+                userToEmail.getEmail();
+                userToEmail.getName();
+                userToEmail.getPhone();
+            }
+
+            List<BookingItem> itemsToEmail = booking.getItems();
+            if (itemsToEmail != null) {
+                itemsToEmail.size(); // initialize collection
+                itemsToEmail.forEach(it -> {
+                    if (it.getPredefinedItem() != null) {
+                        it.getPredefinedItem().getName();
+                    }
+                    it.getQuantity();
+                    it.getPrice();
+                    it.getCustomName();
+                    it.getSize();
+                });
+            }
+
+            // Send confirmation email asynchronously
+            try {
+                emailService.sendPaymentConfirmedEmail(
+                        userToEmail, booking, payment, itemsToEmail);
+            } catch (Exception ignored) {
+                // Do not fail the API if email sending fails
+            }
 
             return ResponseEntity.ok(Map.of(
                     "verified",   true,
