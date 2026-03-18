@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.shifting.exception.ApiException;
 import org.springframework.http.HttpStatus;
+import com.shifting.service.EmailService;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -42,6 +44,13 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         userRepository.save(user);
+
+        // Send welcome email asynchronously
+        try {
+            emailService.sendWelcomeEmail(user);
+        } catch (Exception ignored) {
+            // EmailService already logs failures; don't fail registration for email problems
+        }
 
         String token = jwtProvider.generateToken(user.getEmail());
         return new AuthResponse(token, "User registered successfully");

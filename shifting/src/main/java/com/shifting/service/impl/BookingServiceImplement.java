@@ -15,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.shifting.exception.ApiException;
 import org.springframework.http.HttpStatus;
+import com.shifting.service.EmailService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,6 +27,7 @@ public class BookingServiceImplement implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Override
     public BookingDto createBooking(CreateBookingRequest request) {
@@ -40,6 +42,13 @@ public class BookingServiceImplement implements BookingService {
         booking.setTotalAmount(BigDecimal.ZERO);
 
         Booking saved = bookingRepository.save(booking);
+
+        // Send booking created email (async)
+        try {
+            emailService.sendBookingCreatedEmail(user, saved);
+        } catch (Exception ignored) {
+            // don't fail booking creation because of email issues
+        }
 
         return mapToDto(saved);
     }
@@ -109,6 +118,14 @@ public class BookingServiceImplement implements BookingService {
         // 4. Apply and save
         booking.setStatus(next);
         bookingRepository.save(booking);
+
+        // Send cancellation email if booking was cancelled
+        if (next == BookingStatus.CANCELLED) {
+            try {
+                emailService.sendBookingCancelledEmail(booking.getUser(), booking);
+            } catch (Exception ignored) {
+            }
+        }
 
         return mapToDto(booking);
     }
