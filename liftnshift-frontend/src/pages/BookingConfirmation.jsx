@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchBookingById, updateBookingStatus } from "../store/bookingSlice";
+import { fetchBookingById } from "../store/bookingSlice";
 import { fetchItemsByBooking } from "../store/itemSlice";
 import axiosInstance from "../utils/axiosInstance";
 import Navbar from "../components/Navbar";
@@ -43,7 +43,6 @@ export default function BookingConfirmation() {
     const { selected: booking, loading: bLoading } = useSelector((s) => s.booking);
     const { bookingItems, loading: iLoading } = useSelector((s) => s.item);
     const { token } = useSelector((s) => s.auth);
-
     const [paying, setPaying] = useState(false);
     const [error, setError] = useState("");
     const [done, setDone] = useState(false);
@@ -115,17 +114,14 @@ export default function BookingConfirmation() {
                 handler: async function (response) {
                     try {
                         // Step 4 — Verify payment signature on backend
+                        // Backend will: verify HMAC → save payment → confirm booking
+                        // All in one atomic call — no separate status update needed
                         await axiosInstance.post("/api/payment/verify", {
                             razorpayOrderId: response.razorpay_order_id,
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpaySignature: response.razorpay_signature,
+                            paymentMethod: response.razorpay_payment_method || "unknown",
                         });
-
-                        // Step 5 — Update booking status to CONFIRMED
-                        await dispatch(updateBookingStatus({
-                            bookingId: id,
-                            status: "CONFIRMED",
-                        })).unwrap();
 
                         setPaymentId(response.razorpay_payment_id);
                         setDone(true);
@@ -135,7 +131,9 @@ export default function BookingConfirmation() {
                         setTimeout(() => navigate(`/bookings/${id}/detail`), 3000);
 
                     } catch (err) {
-                        setError(err?.message || "Payment verified but booking update failed. Contact support.");
+                        setError(err?.response?.data?.message ||
+                            "Payment verified but booking update failed. Contact support with Payment ID: " +
+                            response.razorpay_payment_id);
                         setPaying(false);
                     }
                 },

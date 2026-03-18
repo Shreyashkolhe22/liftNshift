@@ -3,16 +3,16 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { logout } from "../store/authSlice";
 
 export default function Navbar() {
-  const dispatch  = useDispatch();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { token } = useSelector((s) => s.auth);
 
   let userName = "U";
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     userName = payload.sub || "U";
-  } catch (_) {}
+  } catch (_) { }
 
   const initials = userName[0]?.toUpperCase() || "U";
 
@@ -34,18 +34,17 @@ export default function Navbar() {
           </Link>
 
           <div className="lns-nav-links">
-            <Link to="/dashboard"   className={`lns-navlink ${isActive("/dashboard")   ? "active" : ""}`}>Home</Link>
+            <Link to="/dashboard" className={`lns-navlink ${isActive("/dashboard") ? "active" : ""}`}>Home</Link>
             <Link to="/my-bookings" className={`lns-navlink ${isActive("/my-bookings") ? "active" : ""}`}>My Bookings</Link>
-            <Link to="/profile"     className={`lns-navlink ${isActive("/profile")     ? "active" : ""}`}>Profile</Link>
           </div>
 
           <div className="lns-nav-right">
             <div className="lns-avatar" title={userName}>{initials}</div>
             <button className="lns-logout-btn" onClick={handleLogout}>
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
               Logout
             </button>

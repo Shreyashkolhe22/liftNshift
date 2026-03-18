@@ -2,24 +2,24 @@ import { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../store/authSlice";
+import introVideo from "../assets/liftnshift_intro.mp4";
 
-// ── Put your video in: src/assets/liftnshift_intro.mp4
-const VIDEO_SRC = "/src/assets/liftnshift_intro.mp4";
+const VIDEO_SRC = introVideo;
 
 export default function Login() {
-  const dispatch   = useDispatch();
-  const navigate   = useNavigate();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const [phase, setPhase]       = useState("splash"); // "splash" | "login"
+  const [phase, setPhase] = useState("splash"); // "splash" | "login"
   const [progress, setProgress] = useState(0);
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-  const [showPwd, setShowPwd]   = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
 
-  const vidRef      = useRef(null);
+  const vidRef = useRef(null);
   const fallbackRef = useRef(null);
 
   // ── Reveal login after splash ──────────────────────────────────────────────

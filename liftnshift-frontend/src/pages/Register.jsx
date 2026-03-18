@@ -2,16 +2,17 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { registerUser } from "../store/authSlice";
+import introVideo from "../assets/liftnshift_intro.mp4";
 
-const VIDEO_SRC = "/src/assets/liftnshift_intro.mp4";
+const VIDEO_SRC = introVideo;
 
 export default function Register() {
-  const dispatch  = useDispatch();
-  const navigate  = useNavigate();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "" });
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
 
   function handleChange(e) {
