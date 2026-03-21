@@ -31,8 +31,8 @@ public class ItemController {
     // 1️⃣ Get single item
     @GetMapping("/{bookingId}/items/{itemId}")
     public ResponseEntity<BookingItemDto> getItemById(
-            @PathVariable Long bookingId,
-            @PathVariable Long itemId) {
+            @PathVariable("bookingId") Long bookingId,
+            @PathVariable("itemId") Long itemId) {
 
         return ResponseEntity.ok(
                 bookingItemService.getItemById(bookingId, itemId)
@@ -42,7 +42,7 @@ public class ItemController {
     // 2️⃣ Get all items of particular booking
     @GetMapping("/{bookingId}/items")
     public ResponseEntity<List<BookingItemDto>> getItemsByBooking(
-            @PathVariable Long bookingId) {
+            @PathVariable("bookingId") Long bookingId) {
 
         return ResponseEntity.ok(
                 bookingItemService.getItemsByBookingId(bookingId)
@@ -52,8 +52,8 @@ public class ItemController {
     // 3️⃣ Delete item
     @DeleteMapping("/{bookingId}/items/{itemId}")
     public ResponseEntity<String> deleteItem(
-            @PathVariable Long bookingId,
-            @PathVariable Long itemId) {
+            @PathVariable("bookingId") Long bookingId,
+            @PathVariable("itemId") Long itemId) {
 
         bookingItemService.deleteItem(bookingId, itemId);
         return ResponseEntity.ok("Item deleted successfully");
@@ -62,9 +62,9 @@ public class ItemController {
     // 4️⃣ Update quantity
     @PutMapping("/{bookingId}/items/{itemId}/quantity")
     public ResponseEntity<String> updateQuantity(
-            @PathVariable Long bookingId,
-            @PathVariable Long itemId,
-            @RequestParam Integer quantity) {
+            @PathVariable("bookingId") Long bookingId,
+            @PathVariable("itemId") Long itemId,
+            @RequestParam("quantity") Integer quantity) {
 
         bookingItemService.updateQuantity(bookingId, itemId, quantity);
         return ResponseEntity.ok("Quantity updated successfully");

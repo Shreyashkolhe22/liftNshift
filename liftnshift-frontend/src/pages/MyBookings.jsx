@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchMyBookings } from "../store/bookingSlice";
+import { calculateTransportCharge } from "../utils/indianCities";
 import Navbar from "../components/Navbar";
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
@@ -40,6 +41,13 @@ function BookingCard({ booking, delay }) {
   const cardRef = useRef(null);
   const overlayRef = useRef(null);
   const st = STATUS[booking.status] || STATUS.PENDING;
+
+  // Calculate total with transport charge
+  const transport = calculateTransportCharge(booking.pickupAddress, booking.dropAddress);
+  const transportCharge = transport.found ? transport.charge : 0;
+  const itemTotal = Number(booking.totalAmount || 0);
+  const tax = Math.round(itemTotal * 0.05);
+  const displayTotal = itemTotal + tax + transportCharge;
 
   // Spotlight pointer tracking
   useEffect(() => {
@@ -152,7 +160,7 @@ function BookingCard({ booking, delay }) {
             className="card-amount"
             style={{ color: overlay ? "#fff" : st.textColor }}
           >
-            {formatAmount(booking.totalAmount)}
+            {formatAmount(displayTotal)}
           </div>
         </div>
 

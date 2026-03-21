@@ -28,7 +28,7 @@ public class PredefinedItemController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get predefined item by ID")
-    public ResponseEntity<PredefinedItem> getItemById(@PathVariable Long id) {
+    public ResponseEntity<PredefinedItem> getItemById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(predefinedItemService.getItemById(id));
     }
 }

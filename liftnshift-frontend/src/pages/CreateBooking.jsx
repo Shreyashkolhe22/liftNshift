@@ -11,6 +11,7 @@ import {
     clearItems,
 } from "../store/itemSlice";
 import Navbar from "../components/Navbar";
+import CityAutocomplete from "../components/CityAutocomplete";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function formatPrice(p) {
@@ -84,18 +85,14 @@ function Step1({ onNext }) {
 
             <form onSubmit={handleSubmit} className="cb-form" noValidate>
                 <div className="cb-field">
-                    <label className="cb-label">Pickup Address</label>
-                    <div className="cb-input-wrap">
-                        <div className="cb-input-dot" style={{ background: "#F47B20" }} />
-                        <input
-                            className="cb-input"
-                            type="text"
-                            placeholder="Your current home address"
-                            value={pickup}
-                            onChange={(e) => setPickup(e.target.value)}
-                            autoFocus
-                        />
-                    </div>
+                    <label className="cb-label">Pickup City</label>
+                    <CityAutocomplete
+                        value={pickup}
+                        onChange={setPickup}
+                        placeholder="Type your pickup city (e.g. Mumbai)"
+                        dotColor="#F47B20"
+                        autoFocus
+                    />
                 </div>
 
                 <div className="cb-connector">
@@ -103,17 +100,13 @@ function Step1({ onNext }) {
                 </div>
 
                 <div className="cb-field">
-                    <label className="cb-label">Drop Address</label>
-                    <div className="cb-input-wrap">
-                        <div className="cb-input-dot" style={{ background: "#34D399" }} />
-                        <input
-                            className="cb-input"
-                            type="text"
-                            placeholder="Your new home address"
-                            value={drop}
-                            onChange={(e) => setDrop(e.target.value)}
-                        />
-                    </div>
+                    <label className="cb-label">Drop City</label>
+                    <CityAutocomplete
+                        value={drop}
+                        onChange={setDrop}
+                        placeholder="Type your destination city (e.g. Pune)"
+                        dotColor="#34D399"
+                    />
                 </div>
 
                 <button className="cb-btn-primary" type="submit" disabled={loading}>

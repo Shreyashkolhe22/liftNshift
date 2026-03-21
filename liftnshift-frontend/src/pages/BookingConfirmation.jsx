@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { fetchBookingById } from "../store/bookingSlice";
 import { fetchItemsByBooking } from "../store/itemSlice";
 import axiosInstance from "../utils/axiosInstance";
+import { calculateTransportCharge, RATE_PER_KM } from "../utils/indianCities";
 import Navbar from "../components/Navbar";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -66,7 +67,14 @@ export default function BookingConfirmation() {
 
     const subtotal = bookingItems.reduce((s, i) => s + Number(i.price || 0), 0);
     const tax = Math.round(subtotal * 0.05);
-    const total = subtotal + tax;
+
+    // ── Transport charge calculation (₹12/km) ────────────────────────────────
+    const transport = calculateTransportCharge(
+        booking?.pickupAddress,
+        booking?.dropAddress
+    );
+    const transportCharge = transport.found ? transport.charge : 0;
+    const total = subtotal + tax + transportCharge;
 
     // ── MAIN PAYMENT HANDLER ──────────────────────────────────────────────────
     async function handlePayNow() {
@@ -324,11 +332,44 @@ export default function BookingConfirmation() {
                                             <span>Service charge (5%)</span>
                                             <span>{formatPrice(tax)}</span>
                                         </div>
-                                        <div className="bc-total-row">
-                                            <span>Delivery</span>
-                                            <span className="bc-free">Free</span>
-                                        </div>
+                                        {transport.found ? (
+                                            <div className="bc-total-row bc-transport-row">
+                                                <span>
+                                                    Transport ({transport.distance} km × ₹{RATE_PER_KM})
+                                                </span>
+                                                <span className="bc-transport-val">
+                                                    {formatPrice(transportCharge)}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="bc-total-row">
+                                                <span>Transport</span>
+                                                <span className="bc-transport-unknown">
+                                                    —
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* Distance info badge */}
+                                    {transport.found && (
+                                        <div className="bc-distance-badge">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" strokeWidth="2">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <path d="M2 12h20" />
+                                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                            </svg>
+                                            <div className="bc-distance-text">
+                                                <span className="bc-distance-val">
+                                                    {transport.distance.toLocaleString("en-IN")} km
+                                                </span>
+                                                <span className="bc-distance-label">
+                                                    {transport.pickup.name} → {transport.drop.name}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="bc-total-divider" />
 
@@ -470,6 +511,24 @@ a{text-decoration:none;color:inherit}
 .bc-total-rows{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
 .bc-total-row{display:flex;justify-content:space-between;font-size:.86rem;color:var(--muted)}
 .bc-free{color:#34D399;font-weight:500}
+.bc-transport-row span:first-child{font-size:.8rem}
+.bc-transport-val{color:var(--o) !important;font-weight:500}
+.bc-transport-unknown{color:var(--muted);font-style:italic}
+
+/* Distance badge */
+.bc-distance-badge{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;margin:14px 0 4px;
+  background:rgba(244,123,32,.05);
+  border:1px solid rgba(244,123,32,.15);
+  border-radius:10px;
+  animation:fup .35s ease both;
+}
+.bc-distance-badge svg{color:var(--o);flex-shrink:0;opacity:.7}
+.bc-distance-text{display:flex;flex-direction:column;gap:2px}
+.bc-distance-val{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.04em;color:var(--o);line-height:1}
+.bc-distance-label{font-size:.72rem;color:var(--muted)}
+
 .bc-total-divider{height:1px;background:var(--b);margin-bottom:18px}
 .bc-grand-total{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px}
 .bc-grand-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}

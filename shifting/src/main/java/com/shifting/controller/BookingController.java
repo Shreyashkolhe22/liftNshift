@@ -1,10 +1,8 @@
 package com.shifting.controller;
 
 import com.shifting.payload.dto.BookingDto;
-import com.shifting.payload.request.AddBookingItemRequest;
 import com.shifting.payload.request.CreateBookingRequest;
 import com.shifting.payload.request.UpdateBookingStatusRequest;
-import com.shifting.service.BookingItemService;
 import com.shifting.service.BookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -20,44 +18,37 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
-    private final BookingItemService bookingItemService;
-
 
     @PostMapping
     public ResponseEntity<BookingDto> createBooking(
-            @RequestBody CreateBookingRequest request)
-    {
+            @RequestBody CreateBookingRequest request) {
 
         BookingDto response = bookingService.createBooking(request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookingDto> getBookingById(@PathVariable Long id)
-    {
+    public ResponseEntity<BookingDto> getBookingById(@PathVariable("id") Long id) {
         BookingDto response = bookingService.getBookingById(id);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteBookingById(@PathVariable Long id)
-    {
+    public ResponseEntity<String> deleteBookingById(@PathVariable("id") Long id) {
         bookingService.deleteBooking(id);
         return ResponseEntity.ok("Deleted booking successfully");
     }
 
     @GetMapping
-    public ResponseEntity<List<BookingDto>> getAllBooking()
-    {
+    public ResponseEntity<List<BookingDto>> getAllBooking() {
         List<BookingDto> response = bookingService.getMyBookings();
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{bookingId}/status")
-    @Operation(summary = "Update booking status",
-            description = "Allowed transitions: PENDING → CONFIRMED → IN_PROGRESS → COMPLETED. Can also cancel anytime.")
+    @Operation(summary = "Update booking status", description = "Allowed transitions: PENDING → CONFIRMED → IN_PROGRESS → COMPLETED. Can also cancel anytime.")
     public ResponseEntity<BookingDto> updateBookingStatus(
-            @PathVariable Long bookingId,
+            @PathVariable("bookingId") Long bookingId,
             @Valid @RequestBody UpdateBookingStatusRequest request) {
 
         BookingDto updated = bookingService.updateBookingStatus(bookingId, request);

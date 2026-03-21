@@ -11,6 +11,7 @@ import {
     clearItems,
 } from "../store/itemSlice";
 import Navbar from "../components/Navbar";
+import { calculateTransportCharge, RATE_PER_KM } from "../utils/indianCities";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function formatPrice(p) {
@@ -318,12 +319,48 @@ export default function BookingDetail() {
                             {/* ── RIGHT ── */}
                             <div className="bd-right">
 
-                                {/* Order total */}
-                                <div className="bd-card bd-total-card" style={{ animationDelay: "40ms" }}>
-                                    <div className="bd-section-label">Booking Total</div>
-                                    <div className="bd-total-big">{formatPrice(booking?.totalAmount || subtotal)}</div>
-                                    <div className="bd-total-note">Includes all items · Tax extra</div>
-                                </div>
+                                {(() => {
+                                    const transport = calculateTransportCharge(
+                                        booking?.pickupAddress,
+                                        booking?.dropAddress
+                                    );
+                                    const transportCharge = transport.found ? transport.charge : 0;
+                                    const itemTotal = Number(booking?.totalAmount || subtotal);
+                                    const tax = Math.round(itemTotal * 0.05);
+                                    const grandTotal = itemTotal + tax + transportCharge;
+                                    return (
+                                        <div className="bd-card bd-total-card" style={{ animationDelay: "40ms" }}>
+                                            <div className="bd-section-label">Booking Total</div>
+                                            <div className="bd-total-big">{formatPrice(grandTotal)}</div>
+                                            <div className="bd-total-note">Items + 5% Tax + Transport</div>
+
+                                            {transport.found && (
+                                                <div className="bd-transport-info">
+                                                    <div className="bd-transport-route">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                            stroke="currentColor" strokeWidth="2">
+                                                            <circle cx="12" cy="12" r="10" />
+                                                            <path d="M2 12h20" />
+                                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                                        </svg>
+                                                        <span>{transport.pickup.name} → {transport.drop.name}</span>
+                                                    </div>
+                                                    <div className="bd-transport-detail">
+                                                        <span className="bd-transport-dist">
+                                                            {transport.distance.toLocaleString("en-IN")} km
+                                                        </span>
+                                                        <span className="bd-transport-charge">
+                                                            Transport: {formatPrice(transport.charge)}
+                                                        </span>
+                                                        <span className="bd-transport-rate">
+                                                            @₹{RATE_PER_KM}/km
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Status timeline */}
                                 <div className="bd-card" style={{ animationDelay: "80ms" }}>
@@ -586,6 +623,31 @@ a{text-decoration:none;color:inherit}
 .bd-total-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--o),transparent)}
 .bd-total-big{font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:.04em;color:var(--o);line-height:1}
 .bd-total-note{font-size:.72rem;color:var(--muted);margin-top:6px}
+
+/* Transport info */
+.bd-transport-info{
+  margin-top:16px;padding:12px 14px;
+  background:rgba(244,123,32,.05);
+  border:1px solid rgba(244,123,32,.15);
+  border-radius:10px;
+}
+.bd-transport-route{
+  display:flex;align-items:center;gap:8px;
+  font-size:.82rem;font-weight:500;color:var(--light);
+  margin-bottom:8px;
+}
+.bd-transport-route svg{color:var(--o);opacity:.7;flex-shrink:0}
+.bd-transport-detail{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bd-transport-dist{
+  font-family:'Bebas Neue',sans-serif;font-size:1.2rem;
+  letter-spacing:.04em;color:var(--o);line-height:1;
+}
+.bd-transport-charge{font-size:.8rem;color:var(--muted)}
+.bd-transport-rate{
+  font-size:.68rem;color:var(--muted);
+  background:var(--card2);padding:2px 8px;
+  border-radius:10px;border:1px solid var(--b);
+}
 
 /* STATUS TIMELINE */
 .bd-timeline{display:flex;flex-direction:column;gap:0;margin-bottom:20px}

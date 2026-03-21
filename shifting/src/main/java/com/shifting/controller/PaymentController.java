@@ -239,7 +239,7 @@ public class PaymentController {
     @GetMapping("/booking/{bookingId}")
     @Operation(summary = "Get payment history for a booking")
     public ResponseEntity<List<PaymentDto>> getPaymentsByBooking(
-            @PathVariable Long bookingId) {
+            @PathVariable("bookingId") Long bookingId) {
 
         User currentUser = userService.getCurrentUser();
         bookingRepository.findByIdAndUserId(bookingId, currentUser.getId())
