@@ -12,14 +12,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class BookingDto {
+
     private Long id;
     private String pickupAddress;
-
     private String dropAddress;
-
+    private Double distanceKm;       // NEW
     private BigDecimal totalAmount;
-
     private BookingStatus status;
-
     private LocalDateTime createdAt;
 }
