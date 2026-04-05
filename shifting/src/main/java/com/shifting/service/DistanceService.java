@@ -2,6 +2,8 @@ package com.shifting.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,8 @@ import java.net.http.HttpResponse;
 @Service
 public class DistanceService {
 
+    private static final Logger log = LoggerFactory.getLogger(DistanceService.class);
+
     @Value("${openrouteservice.api.key}")
     private String apiKey;
 
@@ -22,18 +26,16 @@ public class DistanceService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /**
-     * Calls OpenRouteService API and returns road distance in km.
-     * Falls back to Haversine if the API call fails.
-     */
     public double getRoadDistanceKm(double pickupLat, double pickupLng,
                                     double dropLat, double dropLng) {
         try {
-            // ORS expects: [longitude, latitude] order
             String body = String.format(
                     "{\"coordinates\":[[%f,%f],[%f,%f]]}",
                     pickupLng, pickupLat, dropLng, dropLat
             );
+
+            log.info("[ORS] Sending request to ORS — body: {}", body);
+            log.info("[ORS] Using API key starting with: {}...", apiKey.substring(0, Math.min(10, apiKey.length())));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(ORS_URL))
@@ -45,32 +47,34 @@ public class DistanceService {
             HttpResponse<String> response =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            log.info("[ORS] Response status: {}", response.statusCode());
+            log.info("[ORS] Response body: {}", response.body());
+
             if (response.statusCode() == 200) {
                 JsonNode root = objectMapper.readTree(response.body());
-                // distance is in meters — convert to km
                 double meters = root
                         .path("routes").get(0)
                         .path("summary")
                         .path("distance")
                         .asDouble();
-                return Math.round((meters / 1000.0) * 10.0) / 10.0; // 1 decimal place
+                double km = Math.round((meters / 1000.0) * 10.0) / 10.0;
+                log.info("[ORS] Road distance: {} km", km);
+                return km;
+            } else {
+                log.error("[ORS] Non-200 status: {} — body: {}", response.statusCode(), response.body());
             }
 
         } catch (Exception e) {
-            System.err.println("[DistanceService] ORS call failed, falling back to Haversine: " + e.getMessage());
+            log.error("[ORS] Exception during API call: {}", e.getMessage(), e);
         }
 
-        // Fallback: Haversine straight-line * 1.3 road factor
+        log.warn("[ORS] Falling back to Haversine");
         return haversineWithRoadFactor(pickupLat, pickupLng, dropLat, dropLng);
     }
 
-    /**
-     * Haversine formula — straight-line distance * 1.3 road correction factor.
-     * Used as fallback when ORS API is unavailable.
-     */
     private double haversineWithRoadFactor(double lat1, double lng1,
                                            double lat2, double lng2) {
-        final int R = 6371; // Earth radius in km
+        final int R = 6371;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLng = Math.toRadians(lng2 - lng1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
