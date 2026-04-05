@@ -7,16 +7,16 @@ import com.shifting.payload.response.AuthResponse;
 import com.shifting.repository.UserRepository;
 import com.shifting.security.JwtProvider;
 import com.shifting.service.AuthService;
+import com.shifting.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.shifting.exception.ApiException;
-import org.springframework.http.HttpStatus;
-import com.shifting.service.EmailService;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -30,28 +30,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse register(RegisterRequest request) {
-
-        // Prevent duplicate registrations
         if (userRepository.findByEmail(request.getEmail()) != null) {
-            throw new ApiException(HttpStatus.CONFLICT, "Email already in use: " + request.getEmail());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use: " + request.getEmail());
         }
-
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        // Hash the password before persisting
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-
+        user.setPhone(request.getPhone());
         userRepository.save(user);
-
-        // Send welcome email asynchronously
-        try {
-            emailService.sendWelcomeEmail(user);
-        } catch (Exception ignored) {
-            // EmailService already logs failures; don't fail registration for email problems
-        }
-
+        emailService.sendWelcomeEmail(user);
         String token = jwtProvider.generateToken(user.getEmail());
         return new AuthResponse(token, "User registered successfully");
     }
@@ -59,11 +47,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(), request.getPassword()));
-
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
         String token = jwtProvider.generateToken(request.getEmail());
         return new AuthResponse(token, "Login successful");
     }
