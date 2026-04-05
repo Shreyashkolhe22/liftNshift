@@ -9,6 +9,7 @@ import com.shifting.repository.BookingRepository;
 import com.shifting.repository.PredefinedItemRepository;
 import com.shifting.repository.UserRepository;
 import com.shifting.service.BookingItemService;
+import com.shifting.service.PricingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +30,7 @@ public class BookingItemServiceImplementation implements BookingItemService {
     private final BookingItemRepository bookingItemRepository;
     private final PredefinedItemRepository predefinedItemRepository;
     private final UserRepository userRepository;
+    private final PricingService pricingService;
 
     // ADD ITEM
     @Override
@@ -213,17 +215,22 @@ public class BookingItemServiceImplementation implements BookingItemService {
 
     // UPDATE BOOKING TOTAL
     private void updateBookingTotal(Booking booking) {
+        // 1. Distance-based price (always the base)
+        BigDecimal distancePrice = pricingService.calculateTotalAmount(
+                booking.getDistanceKm() != null ? booking.getDistanceKm() : 0.0
+        );
 
-        BigDecimal total = bookingItemRepository
-                .findByBookingId(booking.getId())
-                .stream()
-                .map(BookingItem::getPrice)
+        // 2. Sum of all item prices × quantity
+        List<BookingItem> items = bookingItemRepository.findByBookingId(booking.getId());
+        BigDecimal itemsTotal = items.stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        booking.setTotalAmount(total);
-
+        // 3. Total = distance price + items total
+        booking.setTotalAmount(distancePrice.add(itemsTotal));
         bookingRepository.save(booking);
     }
+
 
     // MAPPERS
     private BookingItemDto mapToItemDto(BookingItem item) {

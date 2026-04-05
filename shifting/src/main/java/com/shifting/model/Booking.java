@@ -24,22 +24,30 @@ public class Booking {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "pickup_address")
     private String pickupAddress;
 
+    @Column(name = "drop_address")
     private String dropAddress;
 
-    // NEW — stored so we don't recalculate on every fetch
+    @Column(name = "distance_km")
     private Double distanceKm;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
+    @Column(name = "status")
     private BookingStatus status = BookingStatus.PENDING;
 
+    @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookingItem> items;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist

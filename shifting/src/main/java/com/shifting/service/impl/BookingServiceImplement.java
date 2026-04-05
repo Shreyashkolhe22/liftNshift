@@ -58,7 +58,7 @@ public class BookingServiceImplement implements BookingService {
         Booking saved = bookingRepository.save(booking);
 
         // 4. Send confirmation email
-        emailService.sendBookingCreatedEmail(currentUser.getEmail(), saved);
+        emailService.sendBookingCreatedEmail(currentUser, saved);
 
         return mapToDto(saved);
     }
@@ -90,18 +90,22 @@ public class BookingServiceImplement implements BookingService {
 
     @Override
     public void deleteBooking(Long id) {
-        Booking booking = bookingRepository.findByIdAndUserId(id, getCurrentUser().getId())
+        User currentUser = getCurrentUser();
+        Booking booking = bookingRepository.findByIdAndUserId(id, currentUser.getId())
                 .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Booking not found"));
         bookingRepository.delete(booking);
-        emailService.sendBookingCancelledEmail(getCurrentUser().getEmail(), booking);
+        emailService.sendBookingCancelledEmail(currentUser, booking);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "User not found"));
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "User not found");
+        }
+        return user;
     }
 
     private BookingDto mapToDto(Booking booking) {
