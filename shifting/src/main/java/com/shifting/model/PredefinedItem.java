@@ -21,6 +21,5 @@ public class PredefinedItem {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(nullable = false)
     private BigDecimal price;
 }

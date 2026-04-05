@@ -5,7 +5,6 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -17,11 +16,6 @@ public class JwtProvider {
 
     @Value("${app.jwt.expiration-ms}")
     private long jwtExpirationMs;
-
-    /** Build an HMAC-SHA256 signing key from the configured secret string. */
-    private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-    }
 
     public String generateToken(String email) {
         Date now = new Date();
@@ -36,28 +30,32 @@ public class JwtProvider {
     }
 
     public String getEmailFromToken(String token) {
-        return parseClaims(token).getSubject();
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        return parseClaims(token).getBody().getSubject();
     }
 
     public boolean validateToken(String token) {
         try {
+            if (token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
             parseClaims(token);
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            // Expired, malformed, unsupported, or bad signature
+        } catch (JwtException e) {
             return false;
         }
     }
 
-    private Claims parseClaims(String token) {
-        // Strip "Bearer " prefix if present
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
+    private Jws<Claims> parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseClaimsJws(token);
+    }
+
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }
