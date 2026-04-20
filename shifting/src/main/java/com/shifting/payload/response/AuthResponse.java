@@ -1,13 +1,11 @@
 package com.shifting.payload.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.shifting.model.Role;
+import lombok.*;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Data @AllArgsConstructor @NoArgsConstructor
 public class AuthResponse {
     private String token;
     private String message;
+    private Role role;  // ← frontend needs this to show/hide admin menu
 }

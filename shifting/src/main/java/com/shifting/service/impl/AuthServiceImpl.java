@@ -1,5 +1,6 @@
 package com.shifting.service.impl;
 
+import com.shifting.model.Role;
 import com.shifting.model.User;
 import com.shifting.payload.request.LoginRequest;
 import com.shifting.payload.request.RegisterRequest;
@@ -10,8 +11,7 @@ import com.shifting.service.AuthService;
 import com.shifting.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,27 +30,33 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()) != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use: " + request.getEmail());
-        }
+        if (userRepository.findByEmail(request.getEmail()) != null)
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Email already in use");
+
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhone(request.getPhone());
+        user.setRole(Role.USER);  // new users always USER
         userRepository.save(user);
         emailService.sendWelcomeEmail(user);
+
         String token = jwtProvider.generateToken(user.getEmail());
-        return new AuthResponse(token, "User registered successfully");
+        return new AuthResponse(token, "Registered successfully", Role.USER);
     }
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(), request.getPassword())
         );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        User user = userRepository.findByEmail(request.getEmail());
         String token = jwtProvider.generateToken(request.getEmail());
-        return new AuthResponse(token, "Login successful");
+        return new AuthResponse(token, "Login successful", user.getRole());
     }
 }
