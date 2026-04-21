@@ -49,8 +49,13 @@ export default function Login() {
     if (!email || !password) { setError("Please fill in all fields."); return; }
     setLoading(true);
     try {
-      await dispatch(loginUser({ email, password })).unwrap();
-      navigate("/dashboard");
+      const result = await dispatch(loginUser({ email, password })).unwrap();
+      // ── redirect based on role ──
+      if (result.role === "ADMIN") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err?.message || "Invalid email or password.");
     } finally {
