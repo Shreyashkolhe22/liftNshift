@@ -2,18 +2,14 @@ package com.shifting.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "bookings")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Booking {
 
     @Id
@@ -43,6 +39,21 @@ public class Booking {
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookingItem> items;
+
+    // ── NEW FIELDS ─────────────────────────────────────────────────
+    // Date user wants to move
+    @Column(name = "scheduled_date")
+    private LocalDate scheduledDate;
+
+    // Slot user picked — MORNING or EVENING
+    @Enumerated(EnumType.STRING)
+    @Column(name = "time_slot")
+    private TimeSlot timeSlot;
+
+    // Link to assigned truck + driver (set by admin after booking)
+    @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private BookingSlot bookingSlot;
+    // ──────────────────────────────────────────────────────────────
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
