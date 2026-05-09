@@ -1,15 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../utils/axiosInstance";
 
-// ── ASYNC THUNKS ─────────────────────────────────────────────────────────────
-
 export const loginUser = createAsyncThunk(
   "auth/login",
   async ({ email, password }, thunkAPI) => {
     try {
       const res = await axiosInstance.post("/api/auth/login", { email, password });
-      // res.data = { token, message }
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role",  res.data.role || "USER");
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -24,13 +22,10 @@ export const registerUser = createAsyncThunk(
   async ({ name, email, phone, password }, thunkAPI) => {
     try {
       const res = await axiosInstance.post("/api/auth/register", {
-        name,
-        email,
-        phone,
-        password,
+        name, email, phone, password,
       });
-      // res.data = { token, message }
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role",  res.data.role || "USER");
       return res.data;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -40,59 +35,45 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// ── SLICE ────────────────────────────────────────────────────────────────────
-
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    token: localStorage.getItem("token") || null,
+    token:      localStorage.getItem("token") || null,
+    role:       localStorage.getItem("role")  || "USER",
     isLoggedIn: !!localStorage.getItem("token"),
-    loading: false,
-    error: null,
+    loading:    false,
+    error:      null,
   },
   reducers: {
     logout(state) {
-      state.token = null;
+      state.token      = null;
       state.isLoggedIn = false;
-      state.error = null;
+      state.role       = "USER";
+      state.error      = null;
       localStorage.removeItem("token");
+      localStorage.removeItem("role");
     },
-    clearError(state) {
-      state.error = null;
-    },
+    clearError(state) { state.error = null; },
   },
   extraReducers: (builder) => {
-    // ── Login ──
     builder
-      .addCase(loginUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      .addCase(loginUser.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(loginUser.fulfilled, (s, a) => {
+        s.loading    = false;
+        s.token      = a.payload.token;
+        s.isLoggedIn = true;
+        s.role       = a.payload.role || "USER";
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.token = action.payload.token;
-        state.isLoggedIn = true;
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+      .addCase(loginUser.rejected, (s, a) => { s.loading = false; s.error = a.payload; })
 
-    // ── Register ──
-    builder
-      .addCase(registerUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      .addCase(registerUser.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(registerUser.fulfilled, (s, a) => {
+        s.loading    = false;
+        s.token      = a.payload.token;
+        s.isLoggedIn = true;
+        s.role       = a.payload.role || "USER";
       })
-      .addCase(registerUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.token = action.payload.token;
-        state.isLoggedIn = true;
-      })
-      .addCase(registerUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+      .addCase(registerUser.rejected, (s, a) => { s.loading = false; s.error = a.payload; });
   },
 });
 
