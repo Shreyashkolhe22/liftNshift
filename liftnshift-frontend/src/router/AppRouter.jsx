@@ -7,9 +7,8 @@ import MyBookings from "../pages/MyBookings";
 import CreateBooking from "../pages/CreateBooking";
 import BookingConfirmation from "../pages/BookingConfirmation";
 import BookingDetail from "../pages/BookingDetail";
+import Profile from "../pages/Profile";
 import NotFound from "../pages/NotFound";
-
-// import Profile from "../pages/Profile";  ← add when built
 
 export default function AppRouter() {
   return (
@@ -18,7 +17,7 @@ export default function AppRouter() {
 
         {/* ── Public ────────────────────────────────────────── */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* ── Protected ─────────────────────────────────────── */}
@@ -42,11 +41,10 @@ export default function AppRouter() {
           <ProtectedRoute><BookingDetail /></ProtectedRoute>
         } />
 
-        {/*
+        {/* ── Profile ───────────────────────────────────────── */}
         <Route path="/profile" element={
           <ProtectedRoute><Profile /></ProtectedRoute>
         } />
-        */}
 
         {/* ── 404 ───────────────────────────────────────────── */}
         <Route path="*" element={<NotFound />} />

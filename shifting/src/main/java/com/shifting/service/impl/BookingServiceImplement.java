@@ -1,5 +1,6 @@
 package com.shifting.service.impl;
 
+import com.shifting.exception.ApiException;
 import com.shifting.model.Booking;
 import com.shifting.model.BookingStatus;
 import com.shifting.model.User;
@@ -9,17 +10,16 @@ import com.shifting.payload.request.UpdateBookingStatusRequest;
 import com.shifting.repository.BookingRepository;
 import com.shifting.repository.UserRepository;
 import com.shifting.service.BookingService;
+import com.shifting.service.DistanceService;
+import com.shifting.service.EmailService;
+import com.shifting.service.PricingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import com.shifting.exception.ApiException;
-import org.springframework.http.HttpStatus;
-import com.shifting.service.EmailService;
 
 import java.math.BigDecimal;
 import java.util.List;
-
 
 @Service
 @RequiredArgsConstructor
@@ -28,127 +28,95 @@ public class BookingServiceImplement implements BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final DistanceService distanceService;   // NEW
+    private final PricingService pricingService;     // NEW
 
     @Override
     public BookingDto createBooking(CreateBookingRequest request) {
 
-        User user = getCurrentUser();
+        User currentUser = getCurrentUser();
 
-        Booking booking = new Booking();
-        booking.setPickupAddress(request.getPickupAddress());
-        booking.setDropAddress(request.getDropAddress());
-        booking.setUser(user);
-        booking.setStatus(BookingStatus.PENDING);
-        booking.setTotalAmount(BigDecimal.ZERO);
+        // 1. Calculate real road distance via OpenRouteService (falls back to Haversine)
+        double distanceKm = distanceService.getRoadDistanceKm(
+                request.getPickupLat(), request.getPickupLng(),
+                request.getDropLat(), request.getDropLng()
+        );
+
+        // 2. Calculate price: Rs 200 base + Rs 12/km
+        BigDecimal totalAmount = pricingService.calculateTotalAmount(distanceKm);
+
+        // 3. Build and save booking
+        Booking booking = Booking.builder()
+                .user(currentUser)
+                .pickupAddress(request.getPickupAddress())
+                .dropAddress(request.getDropAddress())
+                .distanceKm(distanceKm)
+                .totalAmount(totalAmount)
+                .status(BookingStatus.PENDING)
+                .build();
 
         Booking saved = bookingRepository.save(booking);
 
-        // Send booking created email (async)
-        try {
-            emailService.sendBookingCreatedEmail(user, saved);
-        } catch (Exception ignored) {
-            // don't fail booking creation because of email issues
-        }
+        // 4. Send confirmation email
+        emailService.sendBookingCreatedEmail(currentUser, saved);
 
         return mapToDto(saved);
     }
 
     @Override
     public BookingDto getBookingById(Long id) {
-
-        User currentUser = getCurrentUser();
-
-        Booking booking = bookingRepository
-                .findByIdAndUserId(id, currentUser.getId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
-
+        Booking booking = bookingRepository.findByIdAndUserId(id, getCurrentUser().getId())
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Booking not found with id: " + id));
         return mapToDto(booking);
     }
 
     @Override
-    public void deleteBooking(Long id) {
-
-        User currentUser = getCurrentUser();
-
-        Booking booking = bookingRepository
-                .findByIdAndUserId(id, currentUser.getId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
-
-        bookingRepository.delete(booking);
-    }
-
-    @Override
     public List<BookingDto> getMyBookings() {
-
-        User user = getCurrentUser();
-
-        List<Booking> bookings =
-                bookingRepository.findByUserId(user.getId());
-
-        return bookings.stream()
+        return bookingRepository.findByUserId(getCurrentUser().getId())
+                .stream()
                 .map(this::mapToDto)
                 .toList();
     }
 
     @Override
-    public BookingDto updateBookingStatus(Long bookingId, UpdateBookingStatusRequest request) {
+    public BookingDto updateBookingStatus(Long id, UpdateBookingStatusRequest request) {
+        Booking booking = bookingRepository.findByIdAndUserId(id, getCurrentUser().getId())
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Booking not found"));
 
-        // 1. Get the logged-in user
+        booking.setStatus(request.getStatus());
+        Booking updated = bookingRepository.save(booking);
+        return mapToDto(updated);
+    }
+
+    @Override
+    public void deleteBooking(Long id) {
         User currentUser = getCurrentUser();
+        Booking booking = bookingRepository.findByIdAndUserId(id, currentUser.getId())
+                .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Booking not found"));
+        bookingRepository.delete(booking);
+        emailService.sendBookingCancelledEmail(currentUser, booking);
+    }
 
-        // 2. Find the booking — must belong to this user
-        Booking booking = bookingRepository.findByIdAndUserId(bookingId, currentUser.getId())
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND,
-                        "Booking not found with id: " + bookingId
-                ));
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
-        // 3. Guard: don't allow going backwards in status
-        //    e.g. COMPLETED → PENDING is not allowed
-        BookingStatus current = booking.getStatus();
-        BookingStatus next = request.getStatus();
-
-        if (current == BookingStatus.COMPLETED || current == BookingStatus.CANCELLED) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    "Cannot change status of a " + current + " booking"
-            );
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "User not found");
         }
-
-        // 4. Apply and save
-        booking.setStatus(next);
-        bookingRepository.save(booking);
-
-        // Send cancellation email if booking was cancelled
-        if (next == BookingStatus.CANCELLED) {
-            try {
-                emailService.sendBookingCancelledEmail(booking.getUser(), booking);
-            } catch (Exception ignored) {
-            }
-        }
-
-        return mapToDto(booking);
+        return user;
     }
 
     private BookingDto mapToDto(Booking booking) {
-
         return BookingDto.builder()
                 .id(booking.getId())
                 .pickupAddress(booking.getPickupAddress())
                 .dropAddress(booking.getDropAddress())
-                .status(booking.getStatus())
+                .distanceKm(booking.getDistanceKm())     // NEW
                 .totalAmount(booking.getTotalAmount())
+                .status(booking.getStatus())
                 .createdAt(booking.getCreatedAt())
                 .build();
-    }
-
-    private User getCurrentUser() {
-
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        String email = authentication.getName();
-
-        return userRepository.findByEmail(email);
     }
 }

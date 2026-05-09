@@ -34,12 +34,15 @@ export default function Navbar() {
           </Link>
 
           <div className="lns-nav-links">
-            <Link to="/dashboard" className={`lns-navlink ${isActive("/dashboard") ? "active" : ""}`}>Home</Link>
-            <Link to="/my-bookings" className={`lns-navlink ${isActive("/my-bookings") ? "active" : ""}`}>My Bookings</Link>
+            <Link to="/dashboard"   className={`lns-navlink ${isActive("/dashboard")    ? "active" : ""}`}>Home</Link>
+            <Link to="/my-bookings" className={`lns-navlink ${isActive("/my-bookings")  ? "active" : ""}`}>My Bookings</Link>
           </div>
 
           <div className="lns-nav-right">
-            <div className="lns-avatar" title={userName}>{initials}</div>
+            {/* Clickable avatar → Profile */}
+            <Link to="/profile" className={`lns-avatar-link ${isActive("/profile") ? "lns-avatar-active" : ""}`} title="My Profile">
+              <div className="lns-avatar">{initials}</div>
+            </Link>
             <button className="lns-logout-btn" onClick={handleLogout}>
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -116,6 +119,24 @@ const NAV_CSS = `
     flex-shrink: 0;
   }
 
+  /* Clickable avatar */
+  .lns-avatar-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    text-decoration: none;
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .lns-avatar-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 2px rgba(244,123,32,0.4);
+    border-radius: 50%;
+  }
+  .lns-avatar-active {
+    box-shadow: 0 0 0 2px #F47B20;
+  }
+
   .lns-avatar {
     width: 34px;
     height: 34px;
@@ -128,7 +149,7 @@ const NAV_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: default;
+    cursor: pointer;
     flex-shrink: 0;
   }
 
