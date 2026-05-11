@@ -137,6 +137,104 @@ export const deleteItem = createAsyncThunk(
   }
 );
 
+// ── TRUCK THUNKS ──────────────────────────────────────────────────
+export const fetchAllTrucks = createAsyncThunk(
+  "admin/fetchTrucks",
+  async (_, thunkAPI) => {
+    try {
+      const res = await axiosInstance.get("/api/admin/trucks");
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
+export const addTruck = createAsyncThunk(
+  "admin/addTruck",
+  async (data, thunkAPI) => {
+    try {
+      const res = await axiosInstance.post("/api/admin/trucks", data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
+export const updateTruck = createAsyncThunk(
+  "admin/updateTruck",
+  async ({ id, data }, thunkAPI) => {
+    try {
+      const res = await axiosInstance.put(`/api/admin/trucks/${id}`, data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
+export const deleteTruck = createAsyncThunk(
+  "admin/deleteTruck",
+  async (id, thunkAPI) => {
+    try {
+      await axiosInstance.delete(`/api/admin/trucks/${id}`);
+      return id;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
+// ── DRIVER THUNKS ─────────────────────────────────────────────────
+export const fetchAllDrivers = createAsyncThunk(
+  "admin/fetchDrivers",
+  async (_, thunkAPI) => {
+    try {
+      const res = await axiosInstance.get("/api/admin/drivers");
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
+export const addDriver = createAsyncThunk(
+  "admin/addDriver",
+  async (data, thunkAPI) => {
+    try {
+      const res = await axiosInstance.post("/api/admin/drivers", data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
+export const updateDriver = createAsyncThunk(
+  "admin/updateDriver",
+  async ({ id, data }, thunkAPI) => {
+    try {
+      const res = await axiosInstance.put(`/api/admin/drivers/${id}`, data);
+      return res.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
+export const deleteDriver = createAsyncThunk(
+  "admin/deleteDriver",
+  async (id, thunkAPI) => {
+    try {
+      await axiosInstance.delete(`/api/admin/drivers/${id}`);
+      return id;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message || "Failed");
+    }
+  }
+);
+
 // ── SLICE ──────────────────────────────────────────────────────────
 
 const adminSlice = createSlice({
@@ -146,6 +244,8 @@ const adminSlice = createSlice({
     users:     [],
     bookings:  [],
     items:     [],
+    trucks:    [], 
+    drivers:   [], 
     loading:   false,
     error:     null,
   },
@@ -180,7 +280,23 @@ const adminSlice = createSlice({
       .addCase(fetchAllItems.rejected,  reject)
       .addCase(addItem.fulfilled,    (s, a) => { s.items.push(a.payload); })
       .addCase(updateItem.fulfilled, (s, a) => { s.items = s.items.map(i => i.id === a.payload.id ? a.payload : i); })
-      .addCase(deleteItem.fulfilled, (s, a) => { s.items = s.items.filter(i => i.id !== a.payload); });
+      .addCase(deleteItem.fulfilled, (s, a) => { s.items = s.items.filter(i => i.id !== a.payload); })
+
+      // trucks
+      .addCase(fetchAllTrucks.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(fetchAllTrucks.fulfilled, (s, a) => { s.loading = false; s.trucks = a.payload; })
+      .addCase(fetchAllTrucks.rejected,  (s, a) => { s.loading = false; s.error = a.payload; })
+      .addCase(addTruck.fulfilled,    (s, a) => { s.trucks.push(a.payload); })
+      .addCase(updateTruck.fulfilled, (s, a) => { s.trucks = s.trucks.map(t => t.id === a.payload.id ? a.payload : t); })
+      .addCase(deleteTruck.fulfilled, (s, a) => { s.trucks = s.trucks.filter(t => t.id !== a.payload); })
+
+      // drivers
+      .addCase(fetchAllDrivers.pending,   (s) => { s.loading = true; s.error = null; })
+      .addCase(fetchAllDrivers.fulfilled, (s, a) => { s.loading = false; s.drivers = a.payload; })
+      .addCase(fetchAllDrivers.rejected,  (s, a) => { s.loading = false; s.error = a.payload; })
+      .addCase(addDriver.fulfilled,    (s, a) => { s.drivers.push(a.payload); })
+      .addCase(updateDriver.fulfilled, (s, a) => { s.drivers = s.drivers.map(d => d.id === a.payload.id ? a.payload : d); })
+      .addCase(deleteDriver.fulfilled, (s, a) => { s.drivers = s.drivers.filter(d => d.id !== a.payload); })
   },
 });
 
