@@ -74,17 +74,19 @@ export default function AdminDashboard() {
               <p className="section-title">Quick Actions</p>
               <div className="quick-grid">
                 {[
-                  { label:"Manage Users",    sub:"View, promote or delete users",          path:"/admin/users",    color:"#F47B20" },
-                  { label:"All Bookings",    sub:"Update status, view items, delete",       path:"/admin/bookings", color:"#60A5FA" },
-                  { label:"Item Catalog",    sub:"Add, edit or remove predefined items",    path:"/admin/items",    color:"#34D399" },
-                ].map(q => (
-                  <div className="quick-card" key={q.label}
-                    onClick={() => navigate(q.path)}
-                    style={{"--qc":q.color}}>
-                    <p className="quick-title" style={{color:q.color}}>{q.label} →</p>
-                    <p className="quick-sub">{q.sub}</p>
-                  </div>
-                ))}
+                    { label:"Manage Users",    sub:"View, promote or delete users",        path:"/admin/users",    color:"#F47B20" },
+                    { label:"All Bookings",    sub:"Update status, assign trucks",          path:"/admin/bookings", color:"#60A5FA" },
+                    { label:"Fleet — Trucks",  sub:"Add, edit or deactivate trucks",        path:"/admin/trucks",   color:"#34D399" },
+                    { label:"Drivers",         sub:"Manage your driver team",               path:"/admin/drivers",  color:"#A78BFA" },
+                    { label:"Item Catalog",    sub:"Add, edit or remove predefined items",  path:"/admin/items",    color:"#FBBF24" },
+                  ].map(q => (
+                    <div className="quick-card" key={q.label}
+                      onClick={() => navigate(q.path)}
+                      style={{"--qc":q.color}}>
+                      <p className="quick-title" style={{color:q.color}}>{q.label} →</p>
+                      <p className="quick-sub">{q.sub}</p>
+                    </div>
+                  ))}
               </div>
             </>
           )}
