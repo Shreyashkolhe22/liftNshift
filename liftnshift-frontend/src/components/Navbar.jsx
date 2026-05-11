@@ -37,22 +37,12 @@ export default function Navbar() {
             {/* ── ADMIN sees these links ── */}
             {isAdmin && (
               <>
-                <Link to="/admin/dashboard"
-                  className={`nav-link ${isActive("/admin/dashboard") ? "active" : ""}`}>
-                  Dashboard
-                </Link>
-                <Link to="/admin/users"
-                  className={`nav-link ${isActive("/admin/users") ? "active" : ""}`}>
-                  Users
-                </Link>
-                <Link to="/admin/bookings"
-                  className={`nav-link ${isActive("/admin/bookings") ? "active" : ""}`}>
-                  Bookings
-                </Link>
-                <Link to="/admin/items"
-                  className={`nav-link ${isActive("/admin/items") ? "active" : ""}`}>
-                  Items
-                </Link>
+                <Link to="/admin/dashboard" className={`nav-link ${isActive("/admin/dashboard") ? "active" : ""}`}>Dashboard</Link>
+                <Link to="/admin/users"     className={`nav-link ${isActive("/admin/users")     ? "active" : ""}`}>Users</Link>
+                <Link to="/admin/bookings"  className={`nav-link ${isActive("/admin/bookings")  ? "active" : ""}`}>Bookings</Link>
+                <Link to="/admin/trucks"    className={`nav-link ${isActive("/admin/trucks")    ? "active" : ""}`}>Trucks</Link>
+                <Link to="/admin/drivers"   className={`nav-link ${isActive("/admin/drivers")   ? "active" : ""}`}>Drivers</Link>
+                <Link to="/admin/items"     className={`nav-link ${isActive("/admin/items")     ? "active" : ""}`}>Items</Link>
               </>
             )}
 
