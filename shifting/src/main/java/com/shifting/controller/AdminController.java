@@ -3,6 +3,7 @@ package com.shifting.controller;
 import com.shifting.model.BookingStatus;
 import com.shifting.model.PredefinedItem;
 import com.shifting.payload.dto.*;
+import com.shifting.payload.request.AssignTruckRequest;
 import com.shifting.payload.request.PredefinedItemRequest;
 import com.shifting.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -100,5 +101,77 @@ public class AdminController {
     public ResponseEntity<String> deleteItem(@PathVariable Long id) {
         adminService.deleteItem(id);
         return ResponseEntity.ok("Item deleted successfully");
+    }
+
+    // ── TRUCK + DRIVER ASSIGNMENT ─────────────────────────────────────
+
+    // Get available trucks for a specific booking
+    @GetMapping("/bookings/{bookingId}/available-trucks")
+    public ResponseEntity<List<TruckDto>> getAvailableTrucks(
+            @PathVariable Long bookingId) {
+        return ResponseEntity.ok(adminService.getAvailableTrucks(bookingId));
+    }
+
+    // Get available drivers for a specific booking
+    @GetMapping("/bookings/{bookingId}/available-drivers")
+    public ResponseEntity<List<DriverDto>> getAvailableDrivers(
+            @PathVariable Long bookingId) {
+        return ResponseEntity.ok(adminService.getAvailableDrivers(bookingId));
+    }
+
+    // Assign truck + driver → booking becomes CONFIRMED
+    @PostMapping("/bookings/{bookingId}/assign")
+    public ResponseEntity<AssignmentResponseDto> assignTruckAndDriver(
+            @PathVariable Long bookingId,
+            @RequestBody AssignTruckRequest request) {
+        return ResponseEntity.ok(
+                adminService.assignTruckAndDriver(bookingId, request)
+        );
+    }
+
+    // ── TRUCK MANAGEMENT ──────────────────────────────────────────────
+    @GetMapping("/trucks")
+    public ResponseEntity<List<TruckDto>> getAllTrucks() {
+        return ResponseEntity.ok(adminService.getAllTrucks());
+    }
+
+    @PostMapping("/trucks")
+    public ResponseEntity<TruckDto> addTruck(@RequestBody TruckDto dto) {
+        return ResponseEntity.ok(adminService.addTruck(dto));
+    }
+
+    @PutMapping("/trucks/{id}")
+    public ResponseEntity<TruckDto> updateTruck(
+            @PathVariable Long id, @RequestBody TruckDto dto) {
+        return ResponseEntity.ok(adminService.updateTruck(id, dto));
+    }
+
+    @DeleteMapping("/trucks/{id}")
+    public ResponseEntity<String> deleteTruck(@PathVariable Long id) {
+        adminService.deleteTruck(id);
+        return ResponseEntity.ok("Truck deleted successfully");
+    }
+
+    // ── DRIVER MANAGEMENT ─────────────────────────────────────────────
+    @GetMapping("/drivers")
+    public ResponseEntity<List<DriverDto>> getAllDrivers() {
+        return ResponseEntity.ok(adminService.getAllDrivers());
+    }
+
+    @PostMapping("/drivers")
+    public ResponseEntity<DriverDto> addDriver(@RequestBody DriverDto dto) {
+        return ResponseEntity.ok(adminService.addDriver(dto));
+    }
+
+    @PutMapping("/drivers/{id}")
+    public ResponseEntity<DriverDto> updateDriver(
+            @PathVariable Long id, @RequestBody DriverDto dto) {
+        return ResponseEntity.ok(adminService.updateDriver(id, dto));
+    }
+
+    @DeleteMapping("/drivers/{id}")
+    public ResponseEntity<String> deleteDriver(@PathVariable Long id) {
+        adminService.deleteDriver(id);
+        return ResponseEntity.ok("Driver deleted successfully");
     }
 }

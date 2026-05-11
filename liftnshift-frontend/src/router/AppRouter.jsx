@@ -16,6 +16,8 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers     from "../pages/admin/AdminUsers";
 import AdminBookings  from "../pages/admin/AdminBookings";
 import AdminItems     from "../pages/admin/AdminItems";
+import AdminTrucks  from "../pages/admin/AdminTrucks";
+import AdminDrivers from "../pages/admin/AdminDrivers";
 
 export default function AppRouter() {
   return (
@@ -39,6 +41,8 @@ export default function AppRouter() {
         <Route path="/admin/users"     element={<AdminRoute><AdminUsers /></AdminRoute>} />
         <Route path="/admin/bookings"  element={<AdminRoute><AdminBookings /></AdminRoute>} />
         <Route path="/admin/items"     element={<AdminRoute><AdminItems /></AdminRoute>} />
+        <Route path="/admin/trucks"  element={<AdminRoute><AdminTrucks  /></AdminRoute>} />
+        <Route path="/admin/drivers" element={<AdminRoute><AdminDrivers /></AdminRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
