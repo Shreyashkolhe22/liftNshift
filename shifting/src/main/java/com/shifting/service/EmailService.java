@@ -97,6 +97,24 @@ public class EmailService {
             log.error("Failed to send booking cancelled email: {}", e.getMessage());
         }
     }
+    // ─────────────────────────────────────────────────────────────────────────
+// 5. BOOKING CONFIRMED WITH DRIVER EMAIL
+// ─────────────────────────────────────────────────────────────────────────
+    @Async
+    public void sendBookingConfirmedWithDriverEmail(
+            User user, Booking booking,
+            com.shifting.model.Truck truck,
+            com.shifting.model.Driver driver) {
+        try {
+            send(user.getEmail(),
+                    "Booking #" + pad(booking.getId()) + " Confirmed — Driver Assigned",
+                    buildBookingConfirmedWithDriverHtml(user, booking, truck, driver));
+            log.info("Driver assigned email sent → booking #{}", booking.getId());
+        } catch (Exception e) {
+            log.error("Failed to send driver assigned email: {}", e.getMessage());
+        }
+    }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // CORE SENDER
@@ -113,6 +131,8 @@ public class EmailService {
         h.setText(html, true);
         mailSender.send(msg);
     }
+
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // TEMPLATE BUILDERS
@@ -254,6 +274,67 @@ public class EmailService {
                         hr() +
                         p("If you have any questions, reply to this email and we'll " +
                                 "get back to you.") +
+                        sign()
+        );
+    }
+
+    private String buildBookingConfirmedWithDriverHtml(
+            User user, Booking booking,
+            com.shifting.model.Truck truck,
+            com.shifting.model.Driver driver) {
+
+        String timing = booking.getTimeSlot() == com.shifting.model.TimeSlot.MORNING
+                ? "8 AM – 1 PM" : "2 PM – 7 PM";
+
+        String slotLabel = booking.getTimeSlot() == com.shifting.model.TimeSlot.MORNING
+                ? "Morning" : "Evening";
+
+        return page(
+                logo() +
+                        successBanner() +
+                        h1("Your Move is Confirmed!") +
+                        p("Hi <strong>" + user.getName() + "</strong>,") +
+                        p("Great news! Your booking has been confirmed and a truck & driver " +
+                                "have been assigned for your move. Please be ready <strong>15 minutes " +
+                                "before</strong> your scheduled slot.") +
+
+                        label("Booking Details") +
+                        infoBox(
+                                row("Booking ID",    "#" + pad(booking.getId())) +
+                                        row("Status",        badge("CONFIRMED", "#3B9EFF")) +
+                                        row("Pickup",        booking.getPickupAddress()) +
+                                        row("Drop",          booking.getDropAddress()) +
+                                        row("Moving Date",   booking.getScheduledDate().toString()) +
+                                        row("Time Slot",     slotLabel + " (" + timing + ")")
+                        ) +
+
+                        label("Truck Details") +
+                        infoBox(
+                                row("Vehicle No.",   truck.getRegNumber()) +
+                                        row("Truck Size",    truck.getSize().name()) +
+                                        row("Capacity",      truck.getCapacityKg() + " kg")
+                        ) +
+
+                        label("Driver Details") +
+                        infoBox(
+                                row("Driver Name",   driver.getName()) +
+                                        row("Phone",
+                                                "<a href='tel:" + driver.getPhone() + "' " +
+                                                        "style='color:#F47B20;text-decoration:none;font-weight:700;'>" +
+                                                        driver.getPhone() + "</a>") +
+                                        row("License No.",   driver.getLicenseNo())
+                        ) +
+
+                        callout("Important",
+                                "Our driver <strong>" + driver.getName() + "</strong> will call you " +
+                                        "at <strong>" + user.getPhone() + "</strong> before arrival. " +
+                                        "Please keep your phone reachable on the morning of your move.") +
+
+                        cta(frontendUrl + "/bookings/" + booking.getId() + "/detail",
+                                "View Booking Details") +
+                        hr() +
+                        p("Thank you for choosing LiftNShift. We'll make sure your move " +
+                                "is smooth and hassle-free!") +
                         sign()
         );
     }
