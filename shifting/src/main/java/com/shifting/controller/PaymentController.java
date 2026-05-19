@@ -8,6 +8,7 @@ import com.shifting.model.*;
 import com.shifting.payload.dto.PaymentDto;
 import com.shifting.repository.BookingRepository;
 import com.shifting.repository.PaymentRepository;
+import com.shifting.service.AutoAssignService;
 import com.shifting.service.UserService;
 import com.shifting.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +48,7 @@ public class PaymentController {
     private final BookingRepository  bookingRepository;
     private final UserService        userService;
     private final EmailService       emailService;
+    private final AutoAssignService  autoAssignService;  // ← ADD
 
     // ── 1. Create Order ───────────────────────────────────────────────────────
     // Creates a Razorpay order AND saves a CREATED payment record to DB
@@ -208,13 +211,15 @@ public class PaymentController {
                 });
             }
 
-            // Send confirmation email asynchronously
+            // Send payment confirmation email
             try {
                 emailService.sendPaymentConfirmedEmail(
                         userToEmail, booking, payment, itemsToEmail);
-            } catch (Exception ignored) {
-                // Do not fail the API if email sending fails
-            }
+            } catch (Exception ignored) {}
+
+            // 🤖 TRIGGER AUTO-ASSIGN in background
+            // This runs asynchronously — does not block the payment response
+            autoAssignService.autoAssign(booking.getId());
 
             return ResponseEntity.ok(Map.of(
                     "verified",   true,
@@ -234,6 +239,8 @@ public class PaymentController {
                     "Payment verification error: " + e.getMessage());
         }
     }
+
+
 
     // ── 3. Get payment history for a booking ─────────────────────────────────
     @GetMapping("/booking/{bookingId}")
@@ -276,4 +283,6 @@ public class PaymentController {
         dto.setUpdatedAt(p.getUpdatedAt());
         return dto;
     }
+
+
 }
