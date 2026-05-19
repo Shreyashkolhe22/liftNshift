@@ -339,6 +339,39 @@ public class EmailService {
         );
     }
 
+
+    @Async
+    public void sendManualAssignmentNeededEmail(Booking booking) {
+        try {
+            send(fromEmail, // send to admin
+                    "⚠️ Manual Assignment Needed — Booking #" + pad(booking.getId()),
+                    page(
+                            logo() +
+                                    h1("⚠️ Manual Assignment Required") +
+                                    p("The automated system could not find an available truck or driver.") +
+                                    infoBox(
+                                            row("Booking ID", "#" + pad(booking.getId())) +
+                                                    row("User",       booking.getUser().getName()) +
+                                                    row("Phone",      booking.getUser().getPhone()) +
+                                                    row("Date",       booking.getScheduledDate().toString()) +
+                                                    row("Slot",       booking.getTimeSlot().name()) +
+                                                    row("Pickup",     booking.getPickupAddress()) +
+                                                    row("Drop",       booking.getDropAddress()) +
+                                                    row("Amount",     rupees(booking.getTotalAmount()))
+                                    ) +
+                                    callout("Action Required",
+                                            "Please log in to the admin panel and manually assign " +
+                                                    "a truck and driver for this booking.") +
+                                    cta(frontendUrl + "/admin/bookings", "Go to Admin Bookings") +
+                                    sign()
+                    )
+            );
+            log.info("Manual assignment alert sent for booking #{}", booking.getId());
+        } catch (Exception e) {
+            log.error("Failed to send manual assignment email: {}", e.getMessage());
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // HTML BUILDING BLOCKS
     // ─────────────────────────────────────────────────────────────────────────

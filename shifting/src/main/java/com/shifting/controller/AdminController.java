@@ -6,7 +6,9 @@ import com.shifting.payload.dto.*;
 import com.shifting.payload.request.AssignTruckRequest;
 import com.shifting.payload.request.PredefinedItemRequest;
 import com.shifting.service.AdminService;
+import com.shifting.service.TruckRecommendationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -173,5 +175,17 @@ public class AdminController {
     public ResponseEntity<String> deleteDriver(@PathVariable Long id) {
         adminService.deleteDriver(id);
         return ResponseEntity.ok("Driver deleted successfully");
+    }
+
+    // ── AI TRUCK RECOMMENDATION ───────────────────────────────────────
+    @Autowired
+    private TruckRecommendationService truckRecommendationService;
+
+    @GetMapping("/bookings/{bookingId}/recommend-truck")
+    public ResponseEntity<TruckRecommendationDto> recommendTruck(
+            @PathVariable Long bookingId) {
+        return ResponseEntity.ok(
+                truckRecommendationService.recommend(bookingId)
+        );
     }
 }
