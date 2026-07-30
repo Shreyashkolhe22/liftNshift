@@ -19,20 +19,22 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TruckRecommendationService {
 
-    private final BookingRepository     bookingRepository;
     private final TruckRepository       truckRepository;
     private final DriverRepository      driverRepository;
     private final BookingSlotRepository bookingSlotRepository;
     private final GeminiService         geminiService;
+    private final BookingLoader         bookingLoader;
     private final ObjectMapper          objectMapper = new ObjectMapper();
 
     // ── MAIN METHOD ───────────────────────────────────────────────
     public TruckRecommendationDto recommend(Long bookingId) {
 
-        // 1. Get booking with items
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND, "Booking not found: " + bookingId));
+        // 1. Get booking with items eagerly initialized — this method is called
+        //    from the @Async AutoAssignService path (no surrounding Hibernate
+        //    session) as well as from AdminController, and the Gemini call below
+        //    means we don't want to hold the whole method in one transaction, so
+        //    the items collection must already be initialized before we get here.
+        Booking booking = bookingLoader.loadWithItemsAndUser(bookingId);
 
         if (booking.getItems() == null || booking.getItems().isEmpty())
             throw new ApiException(
