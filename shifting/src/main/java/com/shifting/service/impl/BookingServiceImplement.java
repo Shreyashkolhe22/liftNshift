@@ -89,7 +89,7 @@ public class BookingServiceImplement implements BookingService {
     @Override
     public BookingDto getBookingById(Long id) {
         Booking booking = bookingRepository
-                .findByIdAndUserId(id, getCurrentUser().getId())
+                .findByIdAndUserIdWithSlotTruckDriver(id, getCurrentUser().getId())
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.BAD_REQUEST, "Booking not found with id: " + id
                 ));
@@ -99,7 +99,7 @@ public class BookingServiceImplement implements BookingService {
     @Override
     public List<BookingDto> getMyBookings() {
         return bookingRepository
-                .findByUserId(getCurrentUser().getId())
+                .findByUserIdWithSlotTruckDriver(getCurrentUser().getId())
                 .stream()
                 .map(this::mapToDto)
                 .toList();
