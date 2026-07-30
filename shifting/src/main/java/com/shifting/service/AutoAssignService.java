@@ -56,14 +56,18 @@ public class AutoAssignService {
     private final TruckRecommendationService truckRecommendationService;
     private final EmailService               emailService;
     private final SlotAssignmentWriter       slotWriter;
+    private final BookingLoader              bookingLoader;
 
     // ── PUBLIC API ────────────────────────────────────────────────────────────
 
     @Async
     public void autoAssign(Long bookingId) {
         try {
-            Booking booking = bookingRepository.findById(bookingId)
-                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+            // Load with items + user eagerly initialized — this Booking instance
+            // is later passed into @Async email-sending code, which runs with no
+            // Hibernate session of its own and would otherwise fail trying to
+            // lazily resolve booking.getUser() (see EmailService).
+            Booking booking = bookingLoader.loadWithItemsAndUser(bookingId);
 
             // Guard — must have scheduled date + slot
             if (booking.getScheduledDate() == null || booking.getTimeSlot() == null) {
