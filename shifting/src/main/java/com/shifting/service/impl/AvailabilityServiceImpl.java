@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -33,28 +32,14 @@ public class AvailabilityServiceImpl implements AvailabilityService {
         long totalTrucks = truckRepository.findByIsActiveTrue().size();
         long totalSlotsPerDay = totalTrucks * 2; // MORNING + EVENING
 
-        List<String> blockedDates = new ArrayList<>();
         LocalDate today = LocalDate.now();
+        LocalDate windowEnd = today.plusDays(59); // next 60 days inclusive
 
-        // Check next 60 days
-        for (int i = 0; i < 60; i++) {
-            LocalDate date = today.plusDays(i);
-
-            // Count how many slots are booked on this date
-            long morningBooked = bookingSlotRepository
-                    .countBySlotDateAndTimeSlot(date, TimeSlot.MORNING);
-            long eveningBooked = bookingSlotRepository
-                    .countBySlotDateAndTimeSlot(date, TimeSlot.EVENING);
-
-            long totalBooked = morningBooked + eveningBooked;
-
-            // If all slots filled → date is blocked
-            if (totalBooked >= totalSlotsPerDay) {
-                blockedDates.add(date.format(FMT));
-            }
-        }
-
-        return blockedDates;
+        // Single GROUP BY/HAVING query instead of looping per-day queries
+        return bookingSlotRepository.findFullyBookedDates(totalSlotsPerDay).stream()
+                .filter(date -> !date.isBefore(today) && !date.isAfter(windowEnd))
+                .map(date -> date.format(FMT))
+                .toList();
     }
 
     // ── GET SLOT AVAILABILITY FOR A DATE ──────────────────────────

@@ -19,20 +19,22 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TruckRecommendationService {
 
-    private final BookingRepository     bookingRepository;
     private final TruckRepository       truckRepository;
     private final DriverRepository      driverRepository;
     private final BookingSlotRepository bookingSlotRepository;
     private final GeminiService         geminiService;
+    private final BookingLoader         bookingLoader;
     private final ObjectMapper          objectMapper = new ObjectMapper();
 
     // ── MAIN METHOD ───────────────────────────────────────────────
     public TruckRecommendationDto recommend(Long bookingId) {
 
-        // 1. Get booking with items
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND, "Booking not found: " + bookingId));
+        // 1. Get booking with items eagerly initialized — this method is called
+        //    from the @Async AutoAssignService path (no surrounding Hibernate
+        //    session) as well as from AdminController, and the Gemini call below
+        //    means we don't want to hold the whole method in one transaction, so
+        //    the items collection must already be initialized before we get here.
+        Booking booking = bookingLoader.loadWithItemsAndUser(bookingId);
 
         if (booking.getItems() == null || booking.getItems().isEmpty())
             throw new ApiException(
@@ -65,20 +67,13 @@ public class TruckRecommendationService {
 
         // 6. Get available trucks of recommended size for this booking's slot
         List<Truck> allActiveTrucks = truckRepository.findByIsActiveTrue();
+        List<Long> bookedTruckIds = (booking.getScheduledDate() != null && booking.getTimeSlot() != null)
+                ? bookingSlotRepository.findBookedTruckIdsBySlotDateAndTimeSlot(
+                        booking.getScheduledDate(), booking.getTimeSlot())
+                : List.of();
 
         List<TruckDto> availableTrucks = allActiveTrucks.stream()
-                .filter(t -> {
-                    // If booking has a slot, filter by availability
-                    if (booking.getScheduledDate() != null && booking.getTimeSlot() != null) {
-                        return !bookingSlotRepository
-                                .existsByTruckIdAndSlotDateAndTimeSlot(
-                                        t.getId(),
-                                        booking.getScheduledDate(),
-                                        booking.getTimeSlot()
-                                );
-                    }
-                    return true;
-                })
+                .filter(t -> !bookedTruckIds.contains(t.getId()))
                 .map(t -> TruckDto.builder()
                         .id(t.getId())
                         .regNumber(t.getRegNumber())
@@ -89,19 +84,14 @@ public class TruckRecommendationService {
                 .collect(Collectors.toList());
 
         // 7. Get available drivers for this booking's slot
+        List<Long> bookedDriverIds = (booking.getScheduledDate() != null && booking.getTimeSlot() != null)
+                ? bookingSlotRepository.findBookedDriverIdsBySlotDateAndTimeSlot(
+                        booking.getScheduledDate(), booking.getTimeSlot())
+                : List.of();
+
         List<DriverDto> availableDrivers = driverRepository.findByIsActiveTrue()
                 .stream()
-                .filter(d -> {
-                    if (booking.getScheduledDate() != null && booking.getTimeSlot() != null) {
-                        return !bookingSlotRepository
-                                .existsByDriverIdAndSlotDateAndTimeSlot(
-                                        d.getId(),
-                                        booking.getScheduledDate(),
-                                        booking.getTimeSlot()
-                                );
-                    }
-                    return true;
-                })
+                .filter(d -> !bookedDriverIds.contains(d.getId()))
                 .map(d -> DriverDto.builder()
                         .id(d.getId())
                         .name(d.getName())

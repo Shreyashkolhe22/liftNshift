@@ -33,3 +33,8 @@ build/
 .vscode/
 
 src/main/resources/application.properties
+
+### Local dev scratch files ###
+app-err.log
+app-out.log
+curl_response.txt

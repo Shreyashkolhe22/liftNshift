@@ -260,14 +260,15 @@ public class AdminServiceImpl implements AdminService {
         // Get all active trucks
         List<Truck> allTrucks = truckRepository.findByIsActiveTrue();
 
+        List<Long> bookedTruckIds = bookingSlotRepository
+                .findBookedTruckIdsBySlotDateAndTimeSlot(
+                        booking.getScheduledDate(),
+                        booking.getTimeSlot()
+                );
+
         // Filter out trucks already booked for this date+slot
         return allTrucks.stream()
-                .filter(t -> !bookingSlotRepository
-                        .existsByTruckIdAndSlotDateAndTimeSlot(
-                                t.getId(),
-                                booking.getScheduledDate(),
-                                booking.getTimeSlot()
-                        ))
+                .filter(t -> !bookedTruckIds.contains(t.getId()))
                 .map(this::toTruckDto)
                 .collect(Collectors.toList());
     }
@@ -286,14 +287,15 @@ public class AdminServiceImpl implements AdminService {
         // Get all active drivers
         List<Driver> allDrivers = driverRepository.findByIsActiveTrue();
 
+        List<Long> bookedDriverIds = bookingSlotRepository
+                .findBookedDriverIdsBySlotDateAndTimeSlot(
+                        booking.getScheduledDate(),
+                        booking.getTimeSlot()
+                );
+
         // Filter out drivers already booked for this date+slot
         return allDrivers.stream()
-                .filter(d -> !bookingSlotRepository
-                        .existsByDriverIdAndSlotDateAndTimeSlot(
-                                d.getId(),
-                                booking.getScheduledDate(),
-                                booking.getTimeSlot()
-                        ))
+                .filter(d -> !bookedDriverIds.contains(d.getId()))
                 .map(this::toDriverDto)
                 .collect(Collectors.toList());
     }
