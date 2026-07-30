@@ -41,6 +41,28 @@ public interface BookingSlotRepository extends JpaRepository<BookingSlot, Long> 
             LocalDate slotDate, TimeSlot timeSlot
     );
 
+    // Get all booked truck IDs for a given slotDate and timeSlot in a single GROUP BY query
+    @Query("""
+        SELECT bs.truck.id FROM BookingSlot bs
+        WHERE bs.slotDate = :slotDate AND bs.timeSlot = :timeSlot
+        GROUP BY bs.truck.id
+        """)
+    List<Long> findBookedTruckIdsBySlotDateAndTimeSlot(
+            @Param("slotDate") LocalDate slotDate,
+            @Param("timeSlot") TimeSlot timeSlot
+    );
+
+    // Get all booked driver IDs for a given slotDate and timeSlot in a single GROUP BY query
+    @Query("""
+        SELECT bs.driver.id FROM BookingSlot bs
+        WHERE bs.slotDate = :slotDate AND bs.timeSlot = :timeSlot
+        GROUP BY bs.driver.id
+        """)
+    List<Long> findBookedDriverIdsBySlotDateAndTimeSlot(
+            @Param("slotDate") LocalDate slotDate,
+            @Param("timeSlot") TimeSlot timeSlot
+    );
+
     // Get all dates that are fully booked
     // (used to block dates on frontend calendar)
     @Query("""

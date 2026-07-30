@@ -84,8 +84,15 @@ public class PaymentController {
         }
 
         try {
-            BigDecimal amountInRupees = new BigDecimal(request.get("amount").toString());
-            long       amountInPaise  = amountInRupees
+            // ── Use server-side stored amount, NEVER trust client ──
+            BigDecimal amountInRupees = booking.getTotalAmount();
+
+            if (amountInRupees == null || amountInRupees.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Booking has no valid amount");
+            }
+
+            long amountInPaise = amountInRupees
                     .multiply(BigDecimal.valueOf(100))
                     .longValue();
 

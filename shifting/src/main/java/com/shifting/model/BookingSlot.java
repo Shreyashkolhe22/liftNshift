@@ -6,6 +6,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+// NOTE: The two @UniqueConstraints below are the JPA declaration.
+// Because ddl-auto=update does NOT reliably create constraints on a pre-existing
+// table, the actual DB constraints are applied via:
+//   src/main/resources/db/migration/V1__add_booking_slot_unique_constraints.sql
+// Run that script once against the database before starting the application.
 @Table(
         name = "booking_slots",
         uniqueConstraints = {
