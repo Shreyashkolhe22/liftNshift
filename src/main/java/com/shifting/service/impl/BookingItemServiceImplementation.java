@@ -1,0 +1,281 @@
+package com.shifting.service.impl;
+
+import com.shifting.model.*;
+import com.shifting.payload.dto.BookingDto;
+import com.shifting.payload.dto.BookingItemDto;
+import com.shifting.payload.request.AddBookingItemRequest;
+import com.shifting.repository.BookingItemRepository;
+import com.shifting.repository.BookingRepository;
+import com.shifting.repository.PredefinedItemRepository;
+import com.shifting.repository.UserRepository;
+import com.shifting.service.BookingItemService;
+import com.shifting.service.PricingService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.shifting.exception.ApiException;
+import org.springframework.http.HttpStatus;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class BookingItemServiceImplementation implements BookingItemService {
+
+    private final BookingRepository bookingRepository;
+    private final BookingItemRepository bookingItemRepository;
+    private final PredefinedItemRepository predefinedItemRepository;
+    private final UserRepository userRepository;
+    private final PricingService pricingService;
+
+    // ADD ITEM
+    @Override
+    public BookingDto addItemToBooking(AddBookingItemRequest request) {
+
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Quantity must be greater than 0");
+        }
+
+        User currentUser = getCurrentUser();
+
+        Booking booking = bookingRepository.findById(request.getBookingId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (!booking.getUser().getId().equals(currentUser.getId())) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Cannot modify completed booking");
+        }
+
+        BookingItem bookingItem = new BookingItem();
+        bookingItem.setBooking(booking);
+        bookingItem.setQuantity(request.getQuantity());
+
+        BigDecimal totalPrice;
+
+        if (request.getPredefinedItemId() != null) {
+
+            PredefinedItem predefinedItem = predefinedItemRepository
+                    .findById(request.getPredefinedItemId())
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Predefined item not found"));
+
+            bookingItem.setPredefinedItem(predefinedItem);
+
+            totalPrice = predefinedItem.getPrice()
+                    .multiply(BigDecimal.valueOf(request.getQuantity()));
+
+        } else if (request.getSize() != null) {
+
+            bookingItem.setCustomName(request.getCustomName());
+            bookingItem.setSize(request.getSize());
+
+            BigDecimal basePrice = calculateCustomPrice(request.getSize());
+
+            totalPrice = basePrice
+                    .multiply(BigDecimal.valueOf(request.getQuantity()));
+
+        } else {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid item request");
+        }
+
+        bookingItem.setPrice(totalPrice);
+        bookingItemRepository.save(bookingItem);
+
+        updateBookingTotal(booking);
+
+        return mapToBookingDto(booking);
+    }
+
+    @Override
+    public BookingItemDto getItemById(Long bookingId, Long itemId) {
+
+        User currentUser = getCurrentUser();
+
+        BookingItem item = bookingItemRepository.findById(itemId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found"));
+
+        if (!item.getBooking().getId().equals(bookingId)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Item does not belong to this booking");
+        }
+
+        if (!item.getBooking().getUser().getId().equals(currentUser.getId())) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+
+        return mapToItemDto(item);
+    }
+
+
+    // GET ALL ITEMS BY BOOKING
+    @Override
+    public List<BookingItemDto> getItemsByBookingId(Long bookingId) {
+
+        User currentUser = getCurrentUser();
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (!booking.getUser().getId().equals(currentUser.getId())) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+
+        return bookingItemRepository.findByBookingId(bookingId)
+                .stream()
+                .map(this::mapToItemDto)
+                .toList();
+    }
+
+
+    // DELETE ITEM
+    @Override
+    public void deleteItem(Long bookingId, Long itemId) {
+
+        User currentUser = getCurrentUser();
+
+        BookingItem item = bookingItemRepository.findById(itemId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found"));
+
+        Booking booking = item.getBooking();
+
+        if (!booking.getId().equals(bookingId)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid booking");
+        }
+
+        if (!booking.getUser().getId().equals(currentUser.getId())) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Cannot modify completed booking");
+        }
+
+        bookingItemRepository.delete(item);
+
+        updateBookingTotal(booking);
+    }
+
+
+
+    // UPDATE QUANTITY
+    @Override
+    public void updateQuantity(Long bookingId, Long itemId, Integer quantity) {
+
+        if (quantity == null || quantity <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Quantity must be greater than 0");
+        }
+
+        User currentUser = getCurrentUser();
+
+        BookingItem item = bookingItemRepository.findById(itemId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Item not found"));
+
+        Booking booking = item.getBooking();
+
+        if (!booking.getId().equals(bookingId)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid booking");
+        }
+
+        if (!booking.getUser().getId().equals(currentUser.getId())) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Cannot modify completed booking");
+        }
+
+        BigDecimal unitPrice = item.getPrice()
+                .divide(BigDecimal.valueOf(item.getQuantity()));
+
+        BigDecimal newTotal =
+                unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+        item.setQuantity(quantity);
+        item.setPrice(newTotal);
+
+        bookingItemRepository.save(item);
+
+        updateBookingTotal(booking);
+    }
+
+
+    // CUSTOM PRICE
+    private BigDecimal calculateCustomPrice(ItemSize size) {
+        return switch (size) {
+            case SMALL -> BigDecimal.valueOf(1000);
+            case MEDIUM -> BigDecimal.valueOf(2000);
+            case LARGE -> BigDecimal.valueOf(3000);
+        };
+    }
+
+    // UPDATE BOOKING TOTAL
+    private void updateBookingTotal(Booking booking) {
+        // 1. Distance-based price (always the base)
+        BigDecimal distancePrice = pricingService.calculateTotalAmount(
+                booking.getDistanceKm() != null ? booking.getDistanceKm() : 0.0
+        );
+
+        // 2. Sum of all item prices × quantity
+        List<BookingItem> items = bookingItemRepository.findByBookingId(booking.getId());
+        BigDecimal itemsTotal = items.stream()
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 3. Total = distance price + items total
+        booking.setTotalAmount(distancePrice.add(itemsTotal));
+        bookingRepository.save(booking);
+    }
+
+
+    // MAPPERS
+    private BookingItemDto mapToItemDto(BookingItem item) {
+
+        return BookingItemDto.builder()
+                .id(item.getId())
+                .bookingId(item.getBooking().getId())
+                .predefinedItemId(
+                        item.getPredefinedItem() != null ?
+                                item.getPredefinedItem().getId() : null)
+                .predefinedItemName(
+                        item.getPredefinedItem() != null ?
+                                item.getPredefinedItem().getName() : null)
+                .customName(item.getCustomName())
+                .size(item.getSize() != null ?
+                        item.getSize().name() : null)
+                .quantity(item.getQuantity())
+                .price(item.getPrice())
+                .build();
+    }
+
+    private BookingDto mapToBookingDto(Booking booking) {
+
+        return BookingDto.builder()
+                .id(booking.getId())
+                .pickupAddress(booking.getPickupAddress())
+                .dropAddress(booking.getDropAddress())
+                .status(booking.getStatus())
+                .totalAmount(booking.getTotalAmount())
+                .createdAt(booking.getCreatedAt())
+                .build();
+    }
+
+    // GET CURRENT USER
+    private User getCurrentUser() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        if(email == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Authentication error: email not found");
+        }
+
+        return userRepository.findByEmail(email);
+    }
+}
