@@ -42,6 +42,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // required because the fetch-joined items collection multiplies result
     // rows (one per item) — without it, a booking with 2+ items would make
     // this "single result" query blow up with a non-unique-result error.
-    @Query("SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.items JOIN FETCH b.user WHERE b.id = :id")
+    // Also fetches each item's predefinedItem: TruckRecommendationService
+    // calls item.getPredefinedItem().getName() when building the AI prompt,
+    // which is a second lazy proxy one level below the items collection —
+    // missing this caused "Could not initialize proxy [PredefinedItem#N] -
+    // no session" on the same async path this query exists to fix.
+    @Query("SELECT DISTINCT b FROM Booking b " +
+            "LEFT JOIN FETCH b.items i " +
+            "LEFT JOIN FETCH i.predefinedItem " +
+            "JOIN FETCH b.user " +
+            "WHERE b.id = :id")
     Optional<Booking> findByIdWithItemsAndUser(@Param("id") Long id);
 }
