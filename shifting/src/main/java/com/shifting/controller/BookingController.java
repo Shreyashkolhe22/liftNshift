@@ -25,7 +25,7 @@ public class BookingController {
 
     @PostMapping
     public ResponseEntity<BookingDto> createBooking(
-            @RequestBody CreateBookingRequest request)
+            @Valid @RequestBody CreateBookingRequest request)
     {
 
         BookingDto response = bookingService.createBooking(request);
