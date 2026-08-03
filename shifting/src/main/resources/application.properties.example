@@ -1,0 +1,33 @@
+# Copy this file to application-dev.properties and fill in real local values.
+# application-dev.properties is gitignored — never commit real secrets there.
+
+# Database connection settings
+spring.datasource.url=jdbc:mysql://localhost:3306/shift
+spring.datasource.username=root
+spring.datasource.password=CHANGE_ME
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA / Hibernate
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# JWT — generate a strong random secret (at least 256 bits) for real use
+app.jwt.secret=CHANGE_ME_generate_a_256_bit_random_string
+
+# Razorpay — https://dashboard.razorpay.com/app/keys (use test mode keys for dev)
+razorpay.key.id=CHANGE_ME
+razorpay.key.secret=CHANGE_ME
+
+# Mail — a Gmail App Password, not your account password:
+# https://myaccount.google.com/apppasswords
+spring.mail.username=CHANGE_ME@gmail.com
+spring.mail.password=CHANGE_ME_gmail_app_password
+app.mail.from=CHANGE_ME@gmail.com
+
+app.frontend.url=http://localhost:5173
+
+# OpenRouteService — get a free key at https://openrouteservice.org/dev/#/signup
+openrouteservice.api.key=CHANGE_ME
+
+# Gemini API — https://aistudio.google.com/apikey
+gemini.api.key=CHANGE_ME
