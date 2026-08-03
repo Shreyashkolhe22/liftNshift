@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -61,6 +62,29 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(error, status);
+    }
+
+    // Wrong password, disabled/locked account, etc. — a normal, expected
+    // outcome of a login attempt, not a server fault. Without this handler
+    // it fell through to the generic catch-all below, which reported every
+    // mistyped password as a 500 "unexpected error" (misleading to the
+    // client) and logged a full ERROR-level stack trace for routine,
+    // frequent user behavior (log noise / false-positive alerting risk).
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
+
+        log.info("Authentication failed at {}: {}", request.getRequestURI(), ex.getMessage());
+
+        ApiError error = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                "Invalid email or password.",
+                request.getRequestURI(),
+                null
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
     }
 
     // Entity Not Found
