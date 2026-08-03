@@ -39,3 +39,6 @@ src/main/resources/application-local.properties
 app-err.log
 app-out.log
 curl_response.txt
+
+### DB backups — contain real user data, never commit ###
+docs/db/*.sql
