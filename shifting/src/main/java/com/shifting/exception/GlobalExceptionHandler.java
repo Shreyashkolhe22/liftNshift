@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,29 @@ public class GlobalExceptionHandler {
                 status.value(),
                 status.getReasonPhrase(),
                 ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+
+        return new ResponseEntity<>(error, status);
+    }
+
+    // Spring's own deliberate, controlled exception type (used e.g. in
+    // AuthServiceImpl.register() for "Email already in use") — same
+    // treatment as ApiException: the reason is intentional and safe to
+    // return as-is, since without a handler here it would otherwise fall
+    // through to the generic catch-all below and report a normal, expected
+    // condition (like a duplicate signup) as a 500 server error.
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatusException(ResponseStatusException ex, HttpServletRequest request) {
+
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+
+        ApiError error = new ApiError(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                ex.getReason(),
                 request.getRequestURI(),
                 null
         );
