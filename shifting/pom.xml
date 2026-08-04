@@ -112,6 +112,15 @@
 			<artifactId>mysql-connector-j</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- Cloud SQL Auth Proxy connector — lets Cloud Run reach Cloud SQL over
+		     a private Unix socket instead of a public IP. Only takes effect
+		     when spring.datasource.url uses the cloudSqlInstance= form; local
+		     dev's plain jdbc:mysql://localhost:3306/... URL ignores it. -->
+		<dependency>
+			<groupId>com.google.cloud.sql</groupId>
+			<artifactId>mysql-socket-factory-connector-j-8</artifactId>
+			<version>1.19.1</version>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
