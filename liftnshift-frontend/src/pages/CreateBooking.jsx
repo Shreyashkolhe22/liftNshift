@@ -11,7 +11,7 @@ import {
 } from "../store/itemSlice";
 import Navbar from "../components/Navbar";
 
-const API = "http://localhost:8080";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 function formatPrice(p) {
     if (!p) return "₹0";
