@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchAllBookings, updateBookingStatus, deleteBooking } from "../../store/adminSlice";
 import Navbar from "../../components/Navbar";
 
-const API = "http://localhost:8080";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const STATUSES = ["PENDING","CONFIRMED","IN_PROGRESS","COMPLETED","CANCELLED"];
 
 function fmt(p) {
