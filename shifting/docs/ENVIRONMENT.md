@@ -15,7 +15,7 @@ Activate a profile by setting `SPRING_PROFILES_ACTIVE` (defaults to `dev` if uns
 
 | Variable | Purpose |
 |---|---|
-| `SPRING_DATASOURCE_URL` | JDBC URL, e.g. `jdbc:mysql://host:3306/shift` |
+| `SPRING_DATASOURCE_URL` | JDBC URL, e.g. `jdbc:postgresql://host:5432/shift?sslmode=require` |
 | `SPRING_DATASOURCE_USERNAME` | DB username |
 | `SPRING_DATASOURCE_PASSWORD` | DB password |
 | `APP_JWT_SECRET` | Strong random secret (256+ bits) for signing JWTs |
