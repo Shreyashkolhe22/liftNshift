@@ -67,6 +67,9 @@ export default function BookingConfirmation() {
     const subtotal = bookingItems.reduce((s, i) => s + Number(i.price || 0), 0);
     const tax = Math.round(subtotal * 0.05);
     const total = subtotal + tax;
+    // Only 10% is charged now; the remaining 90% is paid later.
+    const advance = Math.round(total * 0.1);
+    const balance = total - advance;
 
     // ── MAIN PAYMENT HANDLER ──────────────────────────────────────────────────
     async function handlePayNow() {
@@ -189,8 +192,8 @@ export default function BookingConfirmation() {
                                 <span>#{String(id).padStart(4, "0")}</span>
                             </div>
                             <div className="bc-success-row">
-                                <span>Amount paid</span>
-                                <span style={{ color: "#34D399" }}>{formatPrice(total)}</span>
+                                <span>Advance paid (10%)</span>
+                                <span style={{ color: "#34D399" }}>{formatPrice(advance)}</span>
                             </div>
                             <div className="bc-success-row">
                                 <span>Payment ID</span>
@@ -337,6 +340,17 @@ export default function BookingConfirmation() {
                                         <span className="bc-grand-val">{formatPrice(total)}</span>
                                     </div>
 
+                                    <div className="bc-total-rows">
+                                        <div className="bc-total-row">
+                                            <span>Pay now (10% advance)</span>
+                                            <span>{formatPrice(advance)}</span>
+                                        </div>
+                                        <div className="bc-total-row">
+                                            <span>Pay later (90%)</span>
+                                            <span>{formatPrice(balance)}</span>
+                                        </div>
+                                    </div>
+
                                     {/* Razorpay notice */}
                                     <div className="bc-rzp-notice">
                                         <svg width="16" height="16" fill="none" stroke="currentColor"
@@ -361,7 +375,7 @@ export default function BookingConfirmation() {
                                                 Opening payment…
                                             </span>
                                         ) : (
-                                            `Pay ${formatPrice(total)}`
+                                            `Pay ${formatPrice(advance)} advance`
                                         )}
                                     </button>
 

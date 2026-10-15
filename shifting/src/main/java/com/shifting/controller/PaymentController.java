@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.util.List;
@@ -37,6 +38,8 @@ import java.util.Map;
 @Tag(name = "Payment", description = "Razorpay payment integration")
 @SecurityRequirement(name = "bearerAuth")
 public class PaymentController {
+
+    private static final BigDecimal ADVANCE_PERCENT = new BigDecimal("0.10");
 
     @Value("${razorpay.key.id}")
     private String keyId;
@@ -85,16 +88,23 @@ public class PaymentController {
 
         try {
             // ── Use server-side stored amount, NEVER trust client ──
-            BigDecimal amountInRupees = booking.getTotalAmount();
+            BigDecimal totalAmount = booking.getTotalAmount();
 
-            if (amountInRupees == null || amountInRupees.compareTo(BigDecimal.ZERO) <= 0) {
+            if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new ApiException(HttpStatus.BAD_REQUEST,
                         "Booking has no valid amount");
             }
 
+            // Only the advance (10% of the total) is charged online;
+            // the remaining 90% is collected later.
+            BigDecimal amountInRupees = totalAmount
+                    .multiply(ADVANCE_PERCENT)
+                    .setScale(2, RoundingMode.HALF_UP);
+
             long amountInPaise = amountInRupees
                     .multiply(BigDecimal.valueOf(100))
-                    .longValue();
+                    .setScale(0, RoundingMode.HALF_UP)
+                    .longValueExact();
 
             // ── Create order in Razorpay ──
             RazorpayClient client = new RazorpayClient(keyId, keySecret);
@@ -125,6 +135,7 @@ public class PaymentController {
             return ResponseEntity.ok(Map.of(
                     "orderId",  razorpayOrderId,
                     "amount",   amountInPaise,
+                    "totalAmount", totalAmount,
                     "currency", "INR",
                     "keyId",    keyId
             ));
