@@ -42,3 +42,8 @@ curl_response.txt
 
 ### DB backups — contain real user data, never commit ###
 docs/db/*.sql
+
+### Cloud Run env vars (real secrets) ###
+cloudrun-env.yaml
+cloudrun-service.yaml
+cloudrun-env-table.md
